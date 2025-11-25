@@ -26,11 +26,13 @@ SECRET_KEY = 'django-insecure-!i3u(18gy^fxr$s&o-pm_t+ewt-um-f!jypc=$@liz%5ui^jp3
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "USERNAME.pythonanywhere.com",
+    "127.0.0.1",
+    "127.0.0.1:8000",
+    "supat.pythonanywhere.com",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://USERNAME.pythonanywhere.com",
+    "https://supat.pythonanywhere.com",
 ]
 
 LOGIN_URL = "login"
