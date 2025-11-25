@@ -1,0 +1,205 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}รายการรายรับ-รายจ่ายทั้งหมด{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <div>
+    <h1 class="h3 mb-1">รายการเงินทั้งหมด</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      {% if selected_date %}
+        แสดงเฉพาะรายการของวันที่ {{ selected_date|date:"d/m/Y" }}
+        · <a href="{% url 'app_finance:transactions_list' %}" style="color:#a5b4fc;text-decoration:none;">
+            ล้างตัวกรองวันที่
+          </a>
+      {% else %}
+        บันทึกรายรับรายจ่ายทั้งหมดในระบบ
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'app_finance:transaction_create' %}?type=IN" class="btn btn-brand btn-sm">
+      + รายรับ
+    </a>
+    <a href="{% url 'app_finance:transaction_create' %}?type=OUT" class="btn btn-ghost btn-sm">
+      + รายจ่าย
+    </a>
+  </div>
+</div>
+
+<!-- ฟอร์ม filter -->
+<div class="card-soft p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label" style="font-size:12px;">ปี</label>
+      <select name="year" class="form-select form-select-sm">
+        <option value="">ทั้งหมด</option>
+        {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" style="font-size:12px;">เดือน</label>
+      <select name="month" class="form-select form-select-sm">
+        <option value="">ทั้งหมด</option>
+        {% for m, label in months %}
+          <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label" style="font-size:12px;">ประเภท</label>
+      <select name="type" class="form-select form-select-sm">
+        <option value="">ทั้งหมด</option>
+        <option value="IN" {% if filter_type == "IN" %}selected{% endif %}>เฉพาะรายรับ</option>
+        <option value="OUT" {% if filter_type == "OUT" %}selected{% endif %}>เฉพาะรายจ่าย</option>
+      </select>
+    </div>
+    <div class="col-12 col-md-4">
+      <label class="form-label" style="font-size:12px;">ค้นหา (note / บัญชี / หมวด)</label>
+      <input type="text" name="q" value="{{ q }}" class="form-control form-control-sm"
+             placeholder="เช่น เงินเดือน, KBank, อาหาร, ผ่อนบ้าน">
+    </div>
+    <div class="col-12 col-md-2 d-flex gap-2">
+      <button type="submit" class="btn btn-brand btn-sm flex-fill">กรอง</button>
+      <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost btn-sm flex-fill">
+        ล้าง
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- สรุป + ปุ่ม Export -->
+<div class="card-soft-ghost p-3 mb-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <div class="d-flex flex-column">
+      <span class="fw-semibold" style="font-size:13px;">สรุปจากรายการที่แสดงอยู่ตอนนี้</span>
+      <span class="text-secondary" style="font-size:11px;">
+        สามารถ Export CSV ไปเปิดใน Excel หรือ Google Sheets ได้
+      </span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'app_finance:transactions_export_csv' %}{% if query_string %}?{{ query_string }}{% endif %}"
+         class="btn btn-ghost btn-sm">
+        Export CSV
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">รวมรายรับ</div>
+      <div class="fw-semibold text-success">฿{{ income_sum|floatformat:2 }}</div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">รวมรายจ่าย</div>
+      <div class="fw-semibold text-danger">฿{{ expense_sum|floatformat:2 }}</div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">สุทธิ</div>
+      <div class="fw-semibold {% if net_sum < 0 %}text-danger{% else %}text-success{% endif %}">
+        ฿{{ net_sum|floatformat:2 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ตารางรายการ -->
+<div class="card-soft-ghost p-3">
+  {% if transactions %}
+    <div class="table-responsive">
+      <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+        <thead>
+          <tr class="text-secondary">
+            <th>วันที่</th>
+            <th>บัญชี</th>
+            <th>ประเภท</th>
+            <th>หมวด</th>
+            <th>สถานะ</th>
+            <th>หมายเหตุ</th>
+            <th class="text-center">หลักฐาน</th>
+            <th class="text-end">จำนวนเงิน</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transactions %}
+            <tr class="click-row"
+                data-href="{% url 'app_finance:transaction_edit' t.id %}">
+              <!-- วันที่ -->
+              <td>{{ t.date|date:"d/m/Y" }}</td>
+
+              <!-- บัญชี -->
+              <td>{{ t.account.name }}</td>
+
+              <!-- ประเภท (เข้า / ออก) -->
+              <td>
+                {% if t.direction == 'IN' %}
+                  <span class="badge-chip">เข้า</span>
+                {% else %}
+                  <span class="badge-chip">ออก</span>
+                {% endif %}
+              </td>
+
+              <!-- หมวด -->
+              <td>{{ t.category.name|default:"-" }}</td>
+
+              <!-- สถานะ (จริง / ประมาณการ) -->
+              <td>
+                {% if t.is_estimate %}
+                  <span class="badge-chip">ประมาณการ</span>
+                {% else %}
+                  <span class="badge-chip">จริง</span>
+                {% endif %}
+              </td>
+
+              <!-- หมายเหตุ -->
+              <td>{{ t.note|default:"-" }}</td>
+
+              <!-- หลักฐาน -->
+              <td class="text-center">
+                {% if t.proof_file %}
+                  <a href="{{ t.proof_file.url }}" target="_blank" title="เปิดใบเสร็จ">
+                    🧾
+                  </a>
+                {% else %}
+                  <span class="text-secondary" style="font-size:11px;">-</span>
+                {% endif %}
+              </td>
+
+              <!-- จำนวนเงิน -->
+              <td class="text-end {% if t.direction == 'OUT' %}text-danger{% else %}text-success{% endif %}">
+                {% if t.direction == 'OUT' %}-{% endif %}
+                ฿{{ t.amount|floatformat:2 }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="text-secondary" style="font-size:13px;">
+      ยังไม่มีรายการเลย ลองกด “+ รายรับ” หรือ “+ รายจ่าย” ด้านบนดูคับ
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script>
+    // ให้ทั้งแถวคลิกได้ ยกเว้นถ้าคลิกที่ลิงก์/ปุ่มด้านใน
+    document.querySelectorAll("tr.click-row").forEach(function(row){
+      row.style.cursor = "pointer";
+      row.addEventListener("click", function(e){
+        if (e.target.closest("a, button, input, label")) {
+          return; // ถ้าคลิกที่ลิงก์หรือปุ่ม ให้ทำงานของมันไป
+        }
+        const url = row.getAttribute("data-href");
+        if (url){
+          window.location.href = url;
+        }
+      });
+    });
+  </script>
+{% endblock %}

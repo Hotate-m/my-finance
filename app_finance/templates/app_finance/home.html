@@ -1,0 +1,227 @@
+{# app_finance/templates/app_finance/home.html #}
+{% extends "app_finance/base.html" %}
+
+{% block title %}สวัสดีโอ็ต{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+    <div>
+      <h1 class="h3 mb-1">สวัสดีโอ็ต 👋</h1>
+      <div class="text-secondary" style="font-size:13px;">
+        ห้องควบคุมการเงินส่วนตัวของโอ็ต เอาไว้ดูภาพรวมเงินสด บัญชีธนาคาร หนี้
+        เป้าหมายเก็บเงิน และแผนใช้เงินล่วงหน้าในที่เดียว
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3" style="font-size:11px;">
+        <span class="badge-chip">บัญชี {{ accounts_count|default:"0" }} รายการ</span>
+        <span class="badge-chip">หมวดหมู่ {{ categories_count|default:"0" }} รายการ</span>
+        <span class="badge-chip">รายการเงิน {{ transactions_count|default:"0" }} รายการ</span>
+        <span class="badge-chip">เป้าหมาย {{ goals_count|default:"0" }} รายการ</span>
+        <span class="badge-chip">งบประมาณ {{ budgets_count|default:"0" }} เดือน</span>
+        <span class="badge-chip">รายการประจำ {{ recurring_count|default:"0" }} รายการ</span>
+      </div>
+    </div>
+
+    {# มุมสรุปย่อด้านขวา #}
+    <div class="card-soft-ghost px-3 py-2" style="min-width:240px;">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="pill-label">ภาพรวมวันนี้</span>
+        <a href="{% url 'app_finance:dashboard' %}" class="text-secondary"
+           style="font-size:11px;text-decoration:none;">
+          ไปที่ Dashboard →
+        </a>
+      </div>
+      <div class="row gx-3 gy-1" style="font-size:12px;">
+        <div class="col-4">
+          <div class="text-secondary">รับวันนี้</div>
+          <div class="fw-semibold text-success">
+            ฿{{ today_income|default:"0.00"|floatformat:2 }}
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="text-secondary">จ่ายวันนี้</div>
+          <div class="fw-semibold text-danger">
+            ฿{{ today_expense|default:"0.00"|floatformat:2 }}
+          </div>
+        </div>
+        <div class="col-4">
+          <div class="text-secondary">Net worth</div>
+          <div class="fw-semibold">
+            ฿{{ net_worth|default:"0.00"|floatformat:2 }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 align-items-stretch">
+  {# กล่อง Quick actions ขวา #}
+  <div class="col-12 col-lg-4 order-lg-2">
+    <div class="card-soft p-3 h-100 d-flex flex-column justify-content-between">
+      <div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <div class="fw-semibold">เริ่มใช้งานเร็ว ๆ นี้</div>
+            <div class="text-secondary" style="font-size:12px;">
+              เพิ่มรายการวันนี้ หรือดูภาพรวมได้ทันที
+            </div>
+          </div>
+          <span class="badge-chip">Quick actions</span>
+        </div>
+
+        <div class="d-grid gap-2 mt-2">
+          <a href="{% url 'app_finance:transaction_create' %}?type=IN" class="btn btn-brand btn-sm">
+            + เพิ่มรายรับ
+          </a>
+          <a href="{% url 'app_finance:transaction_create' %}?type=OUT" class="btn btn-ghost btn-sm">
+            + เพิ่มรายจ่าย
+          </a>
+          <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost btn-sm">
+            ดูรายการทั้งหมด
+          </a>
+        </div>
+      </div>
+
+      <div class="mt-3 pt-2 border-top" style="border-color:rgba(148,163,184,.35)!important;font-size:11px;">
+        <div class="text-secondary mb-1">มุมวางแผนล่วงหน้า</div>
+        <div class="d-flex flex-wrap gap-1">
+          <a href="{% url 'app_finance:goals_list' %}" class="badge-chip">🎯 เป้าหมาย</a>
+          <a href="{% url 'app_finance:budgets_overview' %}" class="badge-chip">📊 งบประมาณ</a>
+          <a href="{% url 'app_finance:recurring_list' %}" class="badge-chip">🔁 รายการประจำ</a>
+          <a href="{% url 'app_finance:monthly_report' %}" class="badge-chip">📄 รายงานรายเดือน</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ด้านซ้าย: Step 1–4 #}
+  <div class="col-12 col-lg-8 order-lg-1">
+    <div class="row g-3">
+      <!-- STEP 1 -->
+      <div class="col-12">
+        <div class="card-soft-ghost p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <div class="pill-label mb-1">STEP 1</div>
+              <div class="fw-semibold">สร้างบัญชี / กระเป๋าทั้งหมดของโอ็ต</div>
+            </div>
+            <span class="badge-chip" style="font-size:11px;">
+              มีแล้ว {{ accounts_count|default:"0" }} บัญชี
+            </span>
+          </div>
+          <div class="text-secondary" style="font-size:13px;">
+            ใส่ทุกที่ที่มีเงินหรือมีหนี้ เพื่อให้ระบบคำนวณ Net worth ให้ครบ:
+            <span class="d-block mt-1">
+              เงินสด, บัญชีธนาคาร, กองทุน, บัตรเครดิต, สินเชื่อ, ผ่อนบ้าน/รถ ฯลฯ
+            </span>
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'app_finance:accounts_manage' %}" class="btn btn-brand btn-sm">
+              ไปสร้างบัญชี
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="col-12 col-md-6">
+        <div class="card-soft-ghost p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <div class="pill-label mb-1">STEP 2</div>
+              <div class="fw-semibold">ตั้งค่าหมวดหมู่รายรับ–รายจ่าย</div>
+            </div>
+            <span class="badge-chip" style="font-size:11px;">
+              {{ categories_count|default:"0" }} หมวด
+            </span>
+          </div>
+          <div class="text-secondary" style="font-size:13px;">
+            แบ่งตามชีวิตจริงของโอ็ต เช่น:
+            <ul class="mt-2 mb-1">
+              <li>รายรับ: เงินเดือน, โบนัส, งานเสริม</li>
+              <li>รายจ่าย: อาหาร, เดินทาง, ครอบครัว, สุขภาพ</li>
+              <li>หนี้: ผ่อนบ้าน, ผ่อนรถ, บัตรเครดิต</li>
+            </ul>
+          </div>
+          <div class="mt-2">
+            <a href="{% url 'app_finance:categories_manage' %}" class="btn btn-brand btn-sm">
+              ไปตั้งหมวด
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="col-12 col-md-6">
+        <div class="card-soft-ghost p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <div class="pill-label mb-1">STEP 3</div>
+              <div class="fw-semibold">เริ่มบันทึกรายการเงิน</div>
+            </div>
+            <span class="badge-chip" style="font-size:11px;">
+              {{ transactions_count|default:"0" }} รายการ
+            </span>
+          </div>
+          <div class="text-secondary" style="font-size:13px;">
+            กรอกทั้งรายการจริง และ “ประมาณการ” แผนเงินล่วงหน้า
+            <ul class="mt-2 mb-1">
+              <li>เลือกบัญชี + หมวด + จำนวนเงิน</li>
+              <li>ติ๊ก <strong>ประมาณการ</strong> ถ้ายังไม่เกิดจริงแต่รู้ว่าต้องจ่าย</li>
+              <li>ใช้ดูบน Dashboard, ปฏิทินเงิน และรายงานรายเดือนได้เลย</li>
+            </ul>
+          </div>
+          <div class="mt-2 d-flex gap-2 flex-wrap">
+            <a href="{% url 'app_finance:transaction_create' %}?type=IN" class="btn btn-brand btn-sm">
+              เพิ่มรายรับ
+            </a>
+            <a href="{% url 'app_finance:transaction_create' %}?type=OUT" class="btn btn-ghost btn-sm">
+              เพิ่มรายจ่าย
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="col-12">
+        <div class="card-soft-ghost p-3 h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <div class="pill-label mb-1">STEP 4</div>
+              <div class="fw-semibold">วางแผนระยะยาว: เป้าหมาย · งบประมาณ · รายการประจำ</div>
+            </div>
+            <span class="badge-chip" style="font-size:11px;">
+              ใช้ข้อมูลที่บันทึกไปแล้วให้คุ้ม
+            </span>
+          </div>
+          <div class="text-secondary" style="font-size:13px;">
+            เมื่อเริ่มมีข้อมูลในระบบแล้ว มาต่อด้วยการทำให้ชีวิตการเงินนิ่งขึ้น:
+            <ul class="mt-2 mb-1">
+              <li><strong>เป้าหมาย (Goals)</strong> – เก็บเงินก้อน, ปิดหนี้, ทริปเที่ยว</li>
+              <li><strong>งบประมาณเดือน (Budgets)</strong> – ตั้งเพดานใช้แต่ละหมวด แล้วดู % ใช้งบใน Dashboard/รายงานรายเดือน</li>
+              <li><strong>รายการประจำ (Recurring)</strong> – ค่าห้อง, ผ่อนรถ, ค่าเน็ต, สตรีมมิง
+                ใช้ปุ่ม “ลง recurring เดือนนี้” ให้ระบบสร้างรายการให้เอง</li>
+            </ul>
+          </div>
+          <div class="mt-2 d-flex flex-wrap gap-2">
+            <a href="{% url 'app_finance:goals_list' %}" class="btn btn-brand btn-sm">
+              ตั้งเป้าหมายแรก
+            </a>
+            <a href="{% url 'app_finance:budgets_overview' %}" class="btn btn-ghost btn-sm">
+              ตั้งงบประมาณเดือนนี้
+            </a>
+            <a href="{% url 'app_finance:recurring_list' %}" class="btn btn-ghost btn-sm">
+              จัดการรายการประจำ
+            </a>
+            <a href="{% url 'app_finance:debts_overview' %}" class="btn btn-ghost btn-sm">
+              ดูแผนปลดหนี้
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

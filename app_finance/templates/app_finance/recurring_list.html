@@ -1,0 +1,68 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}รายการประจำ (Recurring){% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">รายการประจำ (Recurring)</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      ใช้สำหรับรายการที่เกิดซ้ำทุกเดือน เช่น ค่าบ้าน ค่าบัตรเครดิต ค่าเน็ต ฯลฯ
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <form method="post" action="{% url 'app_finance:recurring_apply_month' %}">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ today.year }}">
+      <input type="hidden" name="month" value="{{ today.month }}">
+      <button type="submit" class="btn btn-brand btn-sm">
+        ลง recurring เดือนนี้
+      </button>
+    </form>
+  </div>
+</div>
+
+<div class="card-soft-ghost p-3">
+  {% if recurrings %}
+    <div class="table-responsive">
+      <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+        <thead>
+          <tr class="text-secondary">
+            <th>วันที่ของเดือน</th>
+            <th>ชื่อรายการ</th>
+            <th>บัญชี</th>
+            <th>หมวด</th>
+            <th class="text-end">จำนวนเงิน</th>
+            <th>ทิศทาง</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in recurrings %}
+            <tr>
+              <td>{{ r.day_of_month }}</td>
+              <td>{{ r.name|default:"-" }}</td>
+              <td>{{ r.account.name }}</td>
+              <td>{{ r.category.name|default:"-" }}</td>
+              <td class="text-end {% if r.direction == 'OUT' %}text-danger{% else %}text-success{% endif %}">
+                {% if r.direction == 'OUT' %}-{% endif %}
+                ฿{{ r.amount|floatformat:2 }}
+              </td>
+              <td>
+                {% if r.direction == 'IN' %}
+                  <span class="badge-chip">รับเข้า</span>
+                {% else %}
+                  <span class="badge-chip">จ่ายออก</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="text-secondary" style="font-size:13px;">
+      ยังไม่มี recurring เลย ลองเพิ่มผ่าน Django admin ก่อน แล้วค่อยกลับมาหน้านี้คับ
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

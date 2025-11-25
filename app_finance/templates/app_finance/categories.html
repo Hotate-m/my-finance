@@ -1,0 +1,154 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}หมวดหมู่รายรับ-รายจ่าย{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h1 class="h3 mb-1">หมวดหมู่รายรับ-รายจ่าย</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      ใช้จัดกลุ่มรายการ เช่น เงินเดือน, ค่าอาหาร, จ่ายหนี้บัตรเครดิต
+      {% if month_label %}
+        <br>ข้อมูลงบประมาณและการใช้สำหรับเดือน {{ month_label }}
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- ฟอร์มเพิ่มหมวดหมู่ -->
+  <div class="col-12 col-lg-4">
+    <div class="card-soft p-3">
+      <h2 class="h6 mb-3">เพิ่มหมวดหมู่ใหม่</h2>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">ชื่อหมวดหมู่</label>
+          {{ form.name }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">ประเภท</label>
+          {{ form.kind }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">งบต่อเดือน (ถ้ามี)</label>
+          {{ form.monthly_budget }}
+          <div class="form-text text-secondary" style="font-size:11px;">
+            เช่น 5000 หมายถึงงบสำหรับหมวดนี้ต่อเดือน ถ้าไม่ตั้งงบให้เว้นว่าง
+          </div>
+        </div>
+        <div class="form-check mb-3">
+          {{ form.is_debt_related }}
+          <label class="form-check-label">
+            เกี่ยวข้องกับหนี้ (เช่น ผ่อนเงินกู้, จ่ายหนี้บัตรเครดิต)
+          </label>
+        </div>
+        <button type="submit" class="btn btn-brand w-100">
+          บันทึกหมวดหมู่
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ตารางหมวดหมู่ + งบประมาณ -->
+  <div class="col-12 col-lg-8">
+    <div class="card-soft-ghost p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">รายการหมวดหมู่ทั้งหมด</h2>
+        <span class="badge-chip bg-light text-dark">{{ categories|length }} หมวด</span>
+      </div>
+
+      {% if categories %}
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+            <thead>
+              <tr class="text-secondary">
+                <th>ชื่อ</th>
+                <th>ประเภท</th>
+                <th>เกี่ยวกับหนี้</th>
+                <th class="text-end">งบต่อเดือน</th>
+                <th class="text-end">ใช้ไปเดือนนี้</th>
+                <th style="width:180px;">สถานะงบ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in categories %}
+                <tr>
+                  <td>{{ c.name }}</td>
+                  <td>
+                    {% if c.kind == 'INCOME' %}
+                      <span class="badge-chip bg-success-subtle text-success">รายรับ</span>
+                    {% else %}
+                      <span class="badge-chip bg-danger-subtle text-danger">รายจ่าย</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if c.is_debt_related %}
+                      <span class="badge-chip bg-warning-subtle text-warning">เกี่ยวกับหนี้</span>
+                    {% else %}
+                      <span class="badge-chip bg-secondary">ทั่วไป</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if c.monthly_budget %}
+                      ฿{{ c.monthly_budget|floatformat:2 }}
+                    {% else %}
+                      <span class="text-secondary">-</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    {% if c.expense_this_month %}
+                      ฿{{ c.expense_this_month|floatformat:2 }}
+                    {% else %}
+                      ฿0.00
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if c.monthly_budget %}
+                      {% if c.budget_percent is not None %}
+                        {% with p=c.budget_percent %}
+                          <div class="mb-1" style="font-size:11px;">
+                            ใช้ไปประมาณ {{ p|floatformat:0 }}%
+                          </div>
+                          <div style="width:100%;height:7px;border-radius:999px;background:#0f172a;overflow:hidden;border:1px solid rgba(148,163,184,.6);">
+                            {% with width=p %}
+                              <div style="
+                                height:100%;
+                                width:{% if width > 100 %}100{% else %}{{ width|floatformat:0 }}{% endif %}%;
+                                {% if width < 70 %}
+                                  background:linear-gradient(to right,#22c55e,#4ade80);
+                                {% elif width < 100 %}
+                                  background:linear-gradient(to right,#eab308,#f97316);
+                                {% else %}
+                                  background:linear-gradient(to right,#ef4444,#b91c1c);
+                                {% endif %}
+                                ">
+                              </div>
+                            {% endwith %}
+                          </div>
+                        {% endwith %}
+                      {% else %}
+                        <span class="text-secondary" style="font-size:11px;">
+                          ไม่มีข้อมูลเปอร์เซ็นต์
+                        </span>
+                      {% endif %}
+                    {% else %}
+                      <span class="text-secondary" style="font-size:11px;">
+                        ยังไม่ตั้งงบ
+                      </span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีหมวดหมู่เลย ลองเพิ่มจากฟอร์มด้านซ้ายได้เลยคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

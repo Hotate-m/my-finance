@@ -1,0 +1,145 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}เป้าหมายเก็บเงิน{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">เป้าหมายเก็บเงิน</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      ใช้ตั้งเป้า เช่น เก็บเงินเที่ยว, กองทุนฉุกเฉิน, ปิดหนี้ ฯลฯ
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- ฟอร์มเพิ่ม goal -->
+  <div class="col-12 col-lg-4">
+    <div class="card-soft p-3 h-100">
+      <h2 class="h6 mb-3">เพิ่มเป้าหมายใหม่</h2>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">ชื่อเป้าหมาย</label>
+          {{ form.name }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">บัญชีที่เกี่ยวข้อง (ถ้ามี)</label>
+          {{ form.account }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">จำนวนเงินเป้าหมาย</label>
+          {{ form.target_amount }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">วันเป้า (ถ้ามี)</label>
+          {{ form.target_date }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">นับจากประเภท</label>
+          {{ form.direction }}
+          <div class="form-text text-secondary" style="font-size:11px;">
+            ส่วนใหญ่ใช้ “เงินเข้า” เพื่อเก็บเงินเพิ่มขึ้นเรื่อยๆ
+          </div>
+        </div>
+        <div class="form-check mb-2">
+          {{ form.is_active }}
+          <label class="form-check-label">ใช้งานอยู่</label>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">หมายเหตุ (ถ้ามี)</label>
+          {{ form.note }}
+        </div>
+        <button type="submit" class="btn btn-brand w-100">บันทึกเป้าหมาย</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- รายการ goals -->
+  <div class="col-12 col-lg-8">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">เป้าหมายที่กำลังเดินอยู่</h2>
+        <span class="badge-chip">{{ goals|length }} เป้าหมาย</span>
+      </div>
+
+      {% if goals %}
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+            <thead>
+              <tr class="text-secondary">
+                <th>เป้าหมาย</th>
+                <th class="text-end">ทำไปแล้ว</th>
+                <th class="text-end">เป้า</th>
+                <th class="text-end">คงเหลือ</th>
+                <th style="width:180px;">ความคืบหน้า</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for g in goals %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">
+                      <a href="{% url 'app_finance:goal_detail' g.id %}" style="color:inherit;text-decoration:none;">
+                        {{ g.name }}
+                      </a>
+                    </div>
+                    <div class="text-secondary" style="font-size:11px;">
+                      บัญชี: {{ g.account.name|default:"-" }}
+                      {% if g.target_date %}
+                        · ถึงเป้า: {{ g.target_date|date:"d/m/Y" }}
+                        {% if g.days_left is not None %}
+                          (เหลือ {{ g.days_left }} วัน)
+                        {% endif %}
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td class="text-end">
+                    ฿{{ g.done_amount|floatformat:2 }}
+                  </td>
+                  <td class="text-end">
+                    ฿{{ g.target_amount|floatformat:2 }}
+                  </td>
+                  <td class="text-end">
+                    <span class="{% if g.remaining_amount < 0 %}text-success{% else %}text-secondary{% endif %}">
+                      ฿{{ g.remaining_amount|floatformat:2 }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if g.percent is not None %}
+                      <div class="mb-1" style="font-size:11px;">
+                        ทำไปแล้ว {{ g.percent|floatformat:0 }}%
+                      </div>
+                      <div style="width:100%;height:7px;border-radius:999px;background:#0f172a;overflow:hidden;border:1px solid rgba(148,163,184,.6);">
+                        {% with p=g.percent %}
+                          <div style="
+                            height:100%;
+                            width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                            {% if p < 50 %}
+                              background:linear-gradient(to right,#22c55e,#4ade80);
+                            {% elif p < 100 %}
+                              background:linear-gradient(to right,#eab308,#f97316);
+                            {% else %}
+                              background:linear-gradient(to right,#22c55e,#16a34a);
+                            {% endif %}
+                          "></div>
+                        {% endwith %}
+                      </div>
+                    {% else %}
+                      <span class="text-secondary" style="font-size:11px;">ไม่มีข้อมูลเปอร์เซ็นต์</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีเป้าหมาย ลองสร้างจากฟอร์มด้านซ้ายได้เลยคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

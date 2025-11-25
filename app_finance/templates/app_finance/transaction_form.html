@@ -1,0 +1,81 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}บันทึกรายรับ-รายจ่าย{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <h1 class="h3 mb-1">บันทึกรายรับ-รายจ่าย</h1>
+  <div class="text-secondary" style="font-size:13px;">
+    เลือกบัญชี ประเภท (รายรับ/รายจ่าย) แล้วกรอกจำนวนเงิน — รองรับทั้งรายการจริงและรายการประมาณการ
+  </div>
+</div>
+
+<div class="card-soft p-3">
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label">บัญชี / กระเป๋า</label>
+        {{ form.account }}
+      </div>
+
+      <div class="col-6">
+        <label class="form-label">วันที่</label>
+        {{ form.date }}
+      </div>
+      <div class="col-6">
+        <label class="form-label">ประเภท</label>
+        {{ form.direction }}
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">จำนวนเงิน</label>
+        {{ form.amount }}
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">หมวดหมู่</label>
+        {{ form.category }}
+        <div class="form-text text-secondary" style="font-size:11px;">
+          เช่น เงินเดือน, ค่าอาหาร, จ่ายหนี้บัตรเครดิต
+        </div>
+      </div>
+
+      <div class="col-12">
+        <div class="form-check mb-1">
+          {{ form.is_estimate }}
+          <label class="form-check-label">
+            เป็นรายการประมาณการ (ยังไม่ได้เกิดขึ้นจริง)
+          </label>
+        </div>
+        <div class="form-text text-secondary" style="font-size:11px;">
+          ถ้าติ๊ก → ใช้สำหรับวางแผนล่วงหน้า เช่น “จะจ่ายหนี้สิ้นเดือนนี้”
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">หมายเหตุ (ถ้ามี)</label>
+        {{ form.note }}
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">ใบเสร็จ / หลักฐาน (ไฟล์/รูป)</label>
+        {{ form.proof_file }}
+        <div class="form-text" style="font-size:11px;">
+          รองรับรูปภาพ หรือไฟล์ PDF ขนาดไม่ใหญ่มาก
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4 d-flex justify-content-between gap-2">
+      <a href="{% url 'app_finance:dashboard' %}" class="btn btn-ghost w-50">
+        กลับไป Dashboard
+      </a>
+      <button type="submit" class="btn btn-brand w-50">
+        บันทึก
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

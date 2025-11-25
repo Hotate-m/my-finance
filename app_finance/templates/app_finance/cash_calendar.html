@@ -1,0 +1,120 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}ปฏิทินเงินเข้า–ออก{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">ปฏิทินเงินเข้า–ออก</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      ดูภาพรวมรายวันของเดือน {{ month_label }} · รวมทั้งเงินเข้า เงินออก และ recurring
+    </div>
+  </div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label" style="font-size:12px;">ปี</label>
+      <select name="year" class="form-select form-select-sm">
+        {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" style="font-size:12px;">เดือน</label>
+      <select name="month" class="form-select form-select-sm">
+        {% for m, label in months %}
+          <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <button type="submit" class="btn btn-brand btn-sm w-100">
+        ดูปฏิทิน
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="card-soft-ghost p-3">
+  <div class="table-responsive">
+    <table class="table table-dark table-sm align-middle mb-0" style="font-size:12px;">
+      <thead>
+        <tr class="text-secondary text-center">
+          <th style="width:14%;">จันทร์</th>
+          <th style="width:14%;">อังคาร</th>
+          <th style="width:14%;">พุธ</th>
+          <th style="width:14%;">พฤหัสบดี</th>
+          <th style="width:14%;">ศุกร์</th>
+          <th style="width:14%;">เสาร์</th>
+          <th style="width:14%;">อาทิตย์</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {# ช่องว่างก่อนวันแรกของเดือน #}
+          {% for _ in empty_start %}
+            <td class="border-0"></td>
+          {% endfor %}
+
+          {% for d in days %}
+            <td style="vertical-align:top;">
+                <a href="{% url 'app_finance:transactions_list' %}?date={{ d.date|date:'Y-m-d' }}"
+                style="text-decoration:none;color:inherit;display:block;">
+                <div class="p-1" style="border-radius:10px; border:1px solid rgba(51,65,85,.9); background:#020617;">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="fw-semibold" style="font-size:13px;">
+                        {{ d.day }}
+                    </span>
+                    {% if d.date == today %}
+                        <span class="badge-chip">วันนี้</span>
+                    {% endif %}
+                    </div>
+
+                    {% if d.total_in or d.total_out %}
+                    <div style="font-size:11px;">
+                        {% if d.total_in and d.total_in > 0 %}
+                        <div class="text-success">
+                            ↑ ฿{{ d.total_in|floatformat:0 }}
+                        </div>
+                        {% endif %}
+                        {% if d.total_out and d.total_out > 0 %}
+                        <div class="text-danger">
+                            ↓ ฿{{ d.total_out|floatformat:0 }}
+                        </div>
+                        {% endif %}
+                        <div class="{% if d.net < 0 %}text-danger{% elif d.net > 0 %}text-success{% else %}text-secondary{% endif %}">
+                        สุทธิ: ฿{{ d.net|floatformat:0 }}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-secondary" style="font-size:11px;">
+                        ไม่มีรายการจริง
+                    </div>
+                    {% endif %}
+
+                    {% if d.recurring %}
+                    <div class="mt-1" style="font-size:10px;">
+                        {% for r in d.recurring %}
+                        <div class="text-secondary">
+                            • {{ r.name|default:"รายการประจำ" }} (฿{{ r.amount|floatformat:0 }})
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                </a>
+            </td>
+
+            {% if d.weekday == 6 and not forloop.last %}
+                </tr><tr>
+            {% endif %}
+        {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

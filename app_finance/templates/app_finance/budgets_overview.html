@@ -1,0 +1,178 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}งบประมาณรายจ่าย{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">งบประมาณรายจ่ายตามหมวด</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      กำหนดงบแต่ละหมวด แล้วดูว่าเดือน {{ month_label }} ใช้ไปเท่าไหร่แล้ว
+    </div>
+  </div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label" style="font-size:12px;">ปี</label>
+      <select name="year" class="form-select form-select-sm">
+        {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" style="font-size:12px;">เดือน</label>
+      <select name="month" class="form-select form-select-sm">
+        {% for m, label in months %}
+          <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <button type="submit" class="btn btn-brand btn-sm w-100">ดูงบเดือนนี้</button>
+    </div>
+
+    <div class="col-12 col-md-5 text-md-end" style="font-size:12px;">
+      จัดการงบประมาณทีละรายการได้จาก Django admin (เมนู Category budgets)
+    </div>
+  </form>
+</div>
+
+<div class="row g-3">
+  <div class="col-12 col-lg-5">
+    <div class="card-soft p-3 h-100">
+      <div class="fw-semibold mb-1">ภาพรวมงบเดือนนี้</div>
+      <div class="text-secondary" style="font-size:12px;">
+        รวมทุกหมวดที่ตั้งงบไว้
+      </div>
+
+      <div class="mt-3">
+        <div class="d-flex justify-content-between" style="font-size:13px;">
+          <span class="text-secondary">งบรวม</span>
+          <span>฿{{ total_budget|floatformat:2 }}</span>
+        </div>
+        <div class="d-flex justify-content-between" style="font-size:13px;">
+          <span class="text-secondary">ใช้จริง</span>
+          <span class="text-{% if total_spent > total_budget %}danger{% else %}success{% endif %}">
+            ฿{{ total_spent|floatformat:2 }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
+          <span class="text-secondary">คงเหลือ</span>
+          <span class="{% if total_diff < 0 %}text-danger{% else %}text-secondary{% endif %}">
+            ฿{{ total_diff|floatformat:2 }}
+          </span>
+        </div>
+
+        {% if total_percent is not None %}
+          <div class="mb-1" style="font-size:12px;">
+            ใช้งบรวมไปแล้วประมาณ {{ total_percent|floatformat:0 }}%
+          </div>
+          <div style="width:100%;height:9px;border-radius:999px;background:#020617;overflow:hidden;border:1px solid rgba(148,163,184,.7);">
+            {% with p=total_percent %}
+              <div style="
+                height:100%;
+                width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                {% if p < 70 %}
+                  background:linear-gradient(to right,#22c55e,#4ade80);
+                {% elif p < 100 %}
+                  background:linear-gradient(to right,#eab308,#f97316);
+                {% else %}
+                  background:linear-gradient(to right,#ef4444,#b91c1c);
+                {% endif %}
+              "></div>
+            {% endwith %}
+          </div>
+        {% else %}
+          <div class="text-secondary" style="font-size:12px;">
+            ยังไม่ได้ตั้งงบรวม (ไม่มีงบในเดือนนี้)
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-7">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">งบตามหมวด</div>
+        <span class="badge-chip">{{ items|length }} หมวด</span>
+      </div>
+
+      {% if items %}
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+            <thead>
+              <tr class="text-secondary">
+                <th>หมวด</th>
+                <th class="text-end">งบ</th>
+                <th class="text-end">ใช้จริง</th>
+                <th class="text-end">คงเหลือ</th>
+                <th style="width:180px;">ความคืบหน้า</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in items %}
+                <tr>
+                  <td>
+                    <div class="fw-semibold">{{ item.budget.category.name }}</div>
+                    {% if item.budget.note %}
+                      <div class="text-secondary" style="font-size:11px;">
+                        {{ item.budget.note }}
+                      </div>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    ฿{{ item.budget_amount|floatformat:2 }}
+                  </td>
+                  <td class="text-end {% if item.over %}text-danger{% else %}text-success{% endif %}">
+                    ฿{{ item.spent|floatformat:2 }}
+                  </td>
+                  <td class="text-end">
+                    <span class="{% if item.diff < 0 %}text-danger{% else %}text-secondary{% endif %}">
+                      ฿{{ item.diff|floatformat:2 }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if item.percent is not None %}
+                      <div class="mb-1" style="font-size:11px;">
+                        ใช้งบไปแล้ว {{ item.percent|floatformat:0 }}%
+                      </div>
+                      <div style="width:100%;height:7px;border-radius:999px;background:#020617;overflow:hidden;border:1px solid rgba(148,163,184,.6);">
+                        {% with p=item.percent %}
+                          <div style="
+                            height:100%;
+                            width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                            {% if p < 70 %}
+                              background:linear-gradient(to right,#22c55e,#4ade80);
+                            {% elif p < 100 %}
+                              background:linear-gradient(to right,#eab308,#f97316);
+                            {% else %}
+                              background:linear-gradient(to right,#ef4444,#b91c1c);
+                            {% endif %}
+                          "></div>
+                        {% endwith %}
+                      </div>
+                    {% else %}
+                      <span class="text-secondary" style="font-size:11px;">
+                        งบเป็น 0 จึงคำนวณเปอร์เซ็นต์ไม่ได้
+                      </span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่ได้ตั้งงบสำหรับเดือนนี้  
+          ไปที่ Django admin → Category budgets เพื่อเพิ่มงบใหม่ได้เลยคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

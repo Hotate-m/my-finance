@@ -1,0 +1,125 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}วิธีใช้งานระบบเงินของโอ็ต{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <h1 class="h3 mb-1">วิธีใช้งาน OAT FINANCE</h1>
+  <div class="text-secondary" style="font-size:13px;">
+    คู่มือสั้น ๆ เอาไว้เตือนตัวเองว่าระบบนี้ใช้ยังไงให้ชีวิตการเงินโอ็ตง่ายขึ้น
+  </div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <div class="fw-semibold mb-1">ภาพรวมระบบ</div>
+  <div class="text-secondary" style="font-size:13px;">
+    ระบบนี้แบ่งออกเป็น 3 ส่วนหลัก ๆ:
+    <ul class="mt-2 mb-1">
+      <li><strong>บันทึกความจริง</strong> – บัญชี, รายรับรายจ่าย, รายการประจำ</li>
+      <li><strong>วางแผนอนาคต</strong> – เป้าหมาย (Goals), งบประมาณ (Budgets), ประมาณการ</li>
+      <li><strong>อ่านค่า / เช็คสุขภาพ</strong> – Dashboard, ปฏิทินเงิน, แผนปลดหนี้, รายงานรายเดือน (PDF)</li>
+    </ul>
+    แนะนำให้ทำตาม Step ด้านล่างนี้ก่อน แล้วค่อยใช้ Dashboard เป็นหน้าหลักในแต่ละวัน
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Step วันแรกที่เริ่มใช้ -->
+  <div class="col-12 col-lg-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="pill-label mb-1">วันแรกที่เริ่มใช้</div>
+      <div class="fw-semibold mb-2">1) สร้างภาพรวมทั้งหมดก่อน</div>
+      <div class="text-secondary" style="font-size:13px;">
+        <ol class="mt-1 mb-2">
+          <li>ไปที่เมนู <strong>ตั้งค่า → บัญชี</strong> ใส่ทุกที่ที่มีเงิน/หนี้
+            (เงินสด, บัญชีธนาคาร, บัตรเครดิต, สินเชื่อ ฯลฯ)</li>
+          <li>ไปที่ <strong>ตั้งค่า → หมวดหมู่</strong> สร้างหมวดที่ใช้จริงในชีวิต</li>
+          <li>เริ่มบันทึกรายการย้อนหลังได้ที่ <strong>รายการ → รายการทั้งหมด</strong>
+            หรือกดปุ่ม <strong>+ เพิ่มรายรับ / รายจ่าย</strong> ที่ด้านบน/ล่างจอ</li>
+        </ol>
+        ทำครบ 3 ข้อนี้ Dashboard จะเริ่มแสดง Net worth และกราฟต่าง ๆ ให้แล้ว
+      </div>
+    </div>
+  </div>
+
+  <!-- Step วางแผน -->
+  <div class="col-12 col-lg-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="pill-label mb-1">หลังจากมีข้อมูลแล้ว</div>
+      <div class="fw-semibold mb-2">2) วางแผนให้ชีวิตเงินนิ่งขึ้น</div>
+      <div class="text-secondary" style="font-size:13px;">
+        <ul class="mt-1 mb-2">
+          <li><strong>เป้าหมาย (Goals)</strong> – เมนู <strong>ตั้งค่า → เป้าหมาย</strong><br>
+              เช่น เก็บเงิน 50,000 ภายใน 6 เดือน, ปิดหนี้บัตรใบนี้ก่อนสิ้นปี</li>
+          <li><strong>งบประมาณ (Budgets)</strong> – เมนู <strong>ตั้งค่า → งบประมาณ</strong><br>
+              ตั้งวงเงินต่อหมวด แล้วดู % ใช้ไปใน Dashboard / รายงานรายเดือน</li>
+          <li><strong>รายการประจำ (Recurring)</strong> – เมนู <strong>รายการ → รายการประจำ</strong><br>
+              ใส่ค่าห้อง, ค่าเน็ต, ผ่อนรถ ฯลฯ แล้วใช้ปุ่ม
+              <em>“ลง recurring เดือนนี้”</em> ให้ระบบสร้างรายการเดือนนั้นให้อัตโนมัติ</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-3">
+  <!-- Routine วันต่อวัน -->
+  <div class="col-12 col-lg-4">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="pill-label mb-1">ใช้จริงในแต่ละวัน</div>
+      <div class="fw-semibold mb-2">3) Daily routine (วันหนึ่งไม่เกิน 3 นาที)</div>
+      <div class="text-secondary" style="font-size:13px;">
+        <ul class="mt-1 mb-2">
+          <li>เปิดหน้า <strong>Dashboard</strong> ดูสรุปวันนี้</li>
+          <li>กด <strong>+ รายรับ</strong> / <strong>+ รายจ่าย</strong>
+              บันทึกเงินเข้า–ออกของวันนั้น</li>
+          <li>ถ้ามีค่าใช้จ่ายล่วงหน้าที่รู้แน่ ๆ ให้ติ๊ก “ประมาณการ” ไว้ก่อน</li>
+        </ul>
+        แค่นี้ข้อมูลจะสะสมไปเรื่อย ๆ แบบไม่รู้สึกเหนื่อยเกินไป
+      </div>
+    </div>
+  </div>
+
+  <!-- Routine รายสัปดาห์ -->
+  <div class="col-12 col-lg-4">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="pill-label mb-1">สัปดาห์ละครั้ง</div>
+      <div class="fw-semibold mb-2">4) Weekly review</div>
+      <div class="text-secondary" style="font-size:13px;">
+        <ul class="mt-1 mb-2">
+          <li>เปิด <strong>ปฏิทินเงิน</strong> ดูว่าอาทิตย์หน้ามีอะไรเข้า–ออกบ้าง</li>
+          <li>เช็ค <strong>Dashboard → งบประมาณ</strong> ว่ามีหมวดไหนใกล้เต็มงบแล้ว</li>
+          <li>ถ้ามี recurring ใหม่ (เช่น สมัครบริการเพิ่ม) ให้ไปเพิ่มในเมนูรายการประจำ</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Routine รายเดือน -->
+  <div class="col-12 col-lg-4">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="pill-label mb-1">ปลายเดือน / ต้นเดือน</div>
+      <div class="fw-semibold mb-2">5) Monthly review</div>
+      <div class="text-secondary" style="font-size:13px;">
+        <ul class="mt-1 mb-2">
+          <li>เปิด <strong>รายงานรายเดือน (PDF)</strong> ดูสรุปทั้งเดือน</li>
+          <li>อัปเดต <strong>งบประมาณเดือนถัดไป</strong> ถ้ารู้สึกว่าหมวดไหนควรเพิ่ม/ลด</li>
+          <li>อัปเดต <strong>เป้าหมาย / แผนปลดหนี้</strong> ว่าไปถึงไหนแล้ว</li>
+        </ul>
+        สามารถ Export PDF / CSV เก็บไว้ หรือส่งให้คนสนิทดูร่วมกันได้
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-soft-ghost p-3 mt-3">
+  <div class="fw-semibold mb-1">Tips เล็ก ๆ สำหรับโอ็ต</div>
+  <div class="text-secondary" style="font-size:13px;">
+    <ul class="mt-1 mb-1">
+      <li>ไม่ต้องกรอกย้อนหลังทุกบาททุกสตางค์ เอาแค่รายการที่ “มีผลต่อภาพรวม” ก็พอ</li>
+      <li>ถ้าวันไหนขี้เกียจกด ให้จดสั้น ๆ ใน Note มือถือ แล้วค่อยมากรอกทีเดียวก็ได้</li>
+      <li>ถ้าเริ่มรู้สึกว่าเมนูเยอะเกิน ให้ใช้ Dashboard เป็นหน้าหลัก แล้วกดลิงก์จากตรงนั้นเป็นหลัก</li>
+    </ul>
+  </div>
+</div>
+{% endblock %}

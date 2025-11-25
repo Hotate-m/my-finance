@@ -1,0 +1,142 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}สรุปรายจ่ายตามหมวด{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">สรุปรายจ่ายตามหมวด</h1>
+    <!-- <a href="{% url 'app_finance:monthly_report_pdf' %}?year={{ year }}&month={{ month }}" class="btn btn-ghost btn-sm">
+    ดาวน์โหลดเป็น PDF
+    </a> -->
+    <div class="text-secondary" style="font-size:13px;">
+      เดือน {{ month_label }} (เฉพาะรายการจริง ไม่รวมประมาณการ)
+    </div>
+  </div>
+</div>
+
+<div class="card-soft p-3 mb-3">
+  <form method="get" class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label" style="font-size:12px;">ปี</label>
+      <select name="year" class="form-select form-select-sm">
+        {% for y in years %}
+          <option value="{{ y }}" {% if year == y %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-3">
+      <label class="form-label" style="font-size:12px;">เดือน</label>
+      <select name="month" class="form-select form-select-sm">
+        {% for m, label in months %}
+          <option value="{{ m }}" {% if month == m %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <button type="submit" class="btn btn-brand btn-sm w-100">
+        ดูสรุป
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="card-soft-ghost p-3 mb-3">
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">รวมงบของทุกหมวด</div>
+      <div class="fw-semibold">
+        ฿{{ total_budget|floatformat:2 }}
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">รวมรายจ่ายจริง</div>
+      <div class="fw-semibold text-danger">
+        ฿{{ total_used|floatformat:2 }}
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">งบคงเหลือ (ถ้ามีงบ)</div>
+      <div class="fw-semibold {% if net_remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+        ฿{{ net_remaining|floatformat:2 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card-soft-ghost p-3">
+  {% if rows %}
+    <div class="table-responsive">
+      <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+        <thead>
+          <tr class="text-secondary">
+            <th>หมวด</th>
+            <th class="text-end">งบต่อเดือน</th>
+            <th class="text-end">ใช้จริง</th>
+            <th class="text-end">คงเหลือ</th>
+            <th style="width:180px;">สถานะ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>{{ row.category.name }}</td>
+              <td class="text-end">
+                {% if row.budget > 0 %}
+                  ฿{{ row.budget|floatformat:2 }}
+                {% else %}
+                  <span class="text-secondary">-</span>
+                {% endif %}
+              </td>
+              <td class="text-end text-danger">
+                ฿{{ row.used|floatformat:2 }}
+              </td>
+              <td class="text-end">
+                {% if row.budget > 0 %}
+                  <span class="{% if row.remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+                    ฿{{ row.remaining|floatformat:2 }}
+                  </span>
+                {% else %}
+                  <span class="text-secondary">ไม่มีงบ</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.budget > 0 %}
+                  {% if row.percent is not None %}
+                    <div class="mb-1" style="font-size:11px;">
+                      ใช้ไปประมาณ {{ row.percent|floatformat:0 }}%
+                    </div>
+                    <div style="width:100%;height:7px;border-radius:999px;background:#0f172a;overflow:hidden;border:1px solid rgba(148,163,184,.6);">
+                      {% with p=row.percent %}
+                        <div style="
+                          height:100%;
+                          width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                          {% if p < 70 %}
+                            background:linear-gradient(to right,#22c55e,#4ade80);
+                          {% elif p < 100 %}
+                            background:linear-gradient(to right,#eab308,#f97316);
+                          {% else %}
+                            background:linear-gradient(to right,#ef4444,#b91c1c);
+                          {% endif %}
+                        "></div>
+                      {% endwith %}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <span class="text-secondary" style="font-size:11px;">
+                    ยังไม่ตั้งงบ
+                  </span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="text-secondary" style="font-size:13px;">
+      ยังไม่มีหมวดค่าใช้จ่ายให้สรุป
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

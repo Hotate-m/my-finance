@@ -1,0 +1,856 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}Dashboard การเงิน{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">Dashboard การเงิน</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      ข้อมูลของวันที่ {{ today|date:"j F Y" }}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <!-- ปุ่ม Quick Add -->
+    <button type="button"
+            class="btn btn-brand btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#quickAddModal">
+      ⚡
+    </button>
+
+    <a href="{% url 'app_finance:transaction_create' %}?type=IN" class="btn btn-brand btn-sm">
+      + รายรับ
+    </a>
+    <a href="{% url 'app_finance:transaction_create' %}?type=OUT" class="btn btn-ghost btn-sm">
+      + รายจ่าย
+    </a>
+    <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost btn-sm">
+      ดูรายการทั้งหมด
+    </a>
+  </div>
+</div>
+
+<!-- Net Worth summary -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">ภาพรวมสถานะรวม (Net Worth)</div>
+      <div class="text-secondary" style="font-size:12px;">
+        สินทรัพย์รวม - หนี้สินรวม จากทุกบัญชีที่ใช้งานอยู่ตอนนี้
+      </div>
+    </div>
+    <span class="badge-chip">Net Worth</span>
+  </div>
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">สินทรัพย์รวม</div>
+      <div class="fw-semibold text-success" style="font-size:18px;">
+        ฿{{ total_assets|floatformat:2 }}
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">หนี้สินรวม</div>
+      <div class="fw-semibold text-danger" style="font-size:18px;">
+        ฿{{ total_liabilities|floatformat:2 }}
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">มูลค่าสุทธิ (Net Worth)</div>
+      <div class="fw-semibold"
+           style="font-size:18px;
+             {% if net_worth > 0 %}
+               color:#22c55e;
+             {% elif net_worth < 0 %}
+               color:#f97373;
+             {% else %}
+               color:#e5e7eb;
+             {% endif %}
+           ">
+        ฿{{ net_worth|floatformat:2 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Smart Insight -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">ภาพรวมฉลาด ๆ ของเดือนนี้</div>
+      <div class="text-secondary" style="font-size:12px;">
+        ช่วยสรุปรายจ่ายเดือนนี้แบบเทียบกับอดีต
+      </div>
+    </div>
+    <span class="badge-chip">Insights</span>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-6">
+      <div class="text-secondary" style="font-size:12px;">หมวดที่ใช้เงินมากสุดเดือนนี้</div>
+      {% if insight_top_category_name %}
+        <div class="fw-semibold" style="font-size:14px;">
+          {{ insight_top_category_name }}
+        </div>
+        <div class="text-danger" style="font-size:13px;">
+          ฿{{ insight_top_category_amount|floatformat:2 }}
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีรายจ่ายจริงในเดือนนี้
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="col-12 col-md-6">
+      <div class="text-secondary" style="font-size:12px;">รายจ่ายเดือนนี้เทียบกับเฉลี่ย 3 เดือนก่อน</div>
+      {% if avg_exp_prev is not None and avg_exp_prev > 0 %}
+        <div style="font-size:13px;">
+          {% if insight_expense_higher %}
+            <span class="text-danger">
+              ใช้มากกว่าเฉลี่ยประมาณ
+              ฿{{ insight_expense_vs_avg|floatformat:2 }}
+              ({{ insight_expense_vs_avg_percent|floatformat:1 }}%)
+            </span>
+          {% else %}
+            <span class="text-success">
+              ใช้น้อยกว่าเฉลี่ยประมาณ
+              ฿{{ insight_expense_vs_avg|floatformat:2|cut:"-" }}
+              ({{ insight_expense_vs_avg_percent|floatformat:1|cut:"-" }}%)
+            </span>
+          {% endif %}
+        </div>
+        <div class="text-secondary" style="font-size:11px;">
+          เฉลี่ย 3 เดือนก่อน: ฿{{ avg_exp_prev|floatformat:2 }}
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีข้อมูลย้อนหลังพอสำหรับเทียบ 3 เดือนก่อนหน้า
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- สัญญาณจากงบประมาณเดือนนี้ -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">งบประมาณรายจ่ายเดือนนี้</div>
+      <div class="text-secondary" style="font-size:12px;">
+        เทียบรายจ่ายจริงกับงบแต่ละหมวด · เดือนนี้: {{ today|date:"m/Y" }}
+      </div>
+    </div>
+    <a href="{% url 'app_finance:budgets_overview' %}" class="badge-chip">
+      ดูรายละเอียดงบ
+    </a>
+  </div>
+
+  {% if budget_total_count == 0 %}
+    <div class="text-secondary" style="font-size:13px;">
+      ยังไม่ได้ตั้งงบสำหรับเดือนนี้  
+      ไปที่เมนู “ตั้งค่า → งบประมาณ” หรือ Django admin เพื่อเริ่มตั้งงบแต่ละหมวดได้เลยคับ
+    </div>
+  {% else %}
+    <div class="mb-2" style="font-size:13px;">
+      ตั้งงบไว้ {{ budget_total_count }} หมวด
+      {% if budget_over_count > 0 %}
+        · <span class="text-danger">เกินงบแล้ว {{ budget_over_count }} หมวด</span>
+      {% else %}
+        · <span class="text-success">ยังไม่มีหมวดไหนเกินงบ</span>
+      {% endif %}
+    </div>
+
+    {% if budget_items_dashboard %}
+      <div class="d-flex flex-column gap-2">
+        {% for it in budget_items_dashboard %}
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:13px;">
+              <div class="fw-semibold">{{ it.category_name }}</div>
+              <div class="text-secondary">
+                ฿{{ it.spent|floatformat:0 }} / ฿{{ it.budget_amount|floatformat:0 }}
+              </div>
+            </div>
+
+            {% if it.percent is not None %}
+              <div style="width:100%;height:7px;border-radius:999px;background:#020617;overflow:hidden;border:1px solid rgba(148,163,184,.6);">
+                {% with p=it.percent %}
+                  <div style="
+                    height:100%;
+                    width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                    {% if p < 70 %}
+                      background:linear-gradient(to right,#22c55e,#4ade80);
+                    {% elif p < 100 %}
+                      background:linear-gradient(to right,#eab308,#f97316);
+                    {% else %}
+                      background:linear-gradient(to right,#ef4444,#b91c1c);
+                    {% endif %}
+                  "></div>
+                {% endwith %}
+              </div>
+              <div class="d-flex justify-content-between mt-1" style="font-size:11px;">
+                <span class="text-secondary">
+                  ใช้งบไปแล้ว {{ it.percent|floatformat:0 }}%
+                </span>
+                <span class="{% if it.diff < 0 %}text-danger{% else %}text-secondary{% endif %}">
+                  คงเหลือ ฿{{ it.diff|floatformat:0 }}
+                </span>
+              </div>
+            {% else %}
+              <div class="text-secondary" style="font-size:11px;">
+                งบเท่ากับ 0 จึงคำนวณเปอร์เซ็นต์ไม่ได้
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-secondary" style="font-size:13px;">
+        ยังไม่มีงบที่ตั้งไว้ในเดือนนี้เลย
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<!-- เป้าหมาย + รายการประจำที่จะถึง -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <div class="fw-semibold">เป้าหมายที่กำลังเดินอยู่</div>
+          <div class="text-secondary" style="font-size:12px;">
+            แสดง 3 เป้าหมายแรกตามวันเป้า
+          </div>
+        </div>
+        <a href="{% url 'app_finance:goals_list' %}" class="badge-chip">
+          ดูทั้งหมด
+        </a>
+      </div>
+
+      {% if goals_preview %}
+        <div class="d-flex flex-column gap-2">
+          {% for g in goals_preview %}
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:13px;">
+                <div class="fw-semibold">{{ g.obj.name }}</div>
+                <div class="text-secondary">
+                  ฿{{ g.done|floatformat:0 }} / ฿{{ g.target|floatformat:0 }}
+                </div>
+              </div>
+              {% if g.percent is not None %}
+                <div style="width:100%;height:7px;border-radius:999px;background:#020617;overflow:hidden;border:1px solid rgba(148,163,184,.6);">
+                  {% with p=g.percent %}
+                    <div style="
+                      height:100%;
+                      width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                      {% if p < 50 %}
+                        background:linear-gradient(to right,#22c55e,#4ade80);
+                      {% elif p < 100 %}
+                        background:linear-gradient(to right,#eab308,#f97316);
+                      {% else %}
+                        background:linear-gradient(to right,#22c55e,#16a34a);
+                      {% endif %}
+                    "></div>
+                  {% endwith %}
+                </div>
+                <div class="d-flex justify-content-between mt-1" style="font-size:11px;">
+                  <span class="text-secondary">
+                    ทำไปแล้ว {{ g.percent|floatformat:0 }}%
+                  </span>
+                  <span class="{% if g.remaining < 0 %}text-success{% else %}text-secondary{% endif %}">
+                    คงเหลือ ฿{{ g.remaining|floatformat:0 }}
+                  </span>
+                </div>
+              {% else %}
+                <div class="text-secondary" style="font-size:11px;">
+                  ยังไม่ได้ตั้งจำนวนเงินเป้าเลย
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีเป้าหมาย ลองไปสร้างในเมนู “เป้าหมาย” ดูคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <div class="fw-semibold">รายการประจำที่กำลังจะถึง</div>
+          <div class="text-secondary" style="font-size:12px;">
+            ดึงจากรายการประจำของเดือนนี้
+          </div>
+        </div>
+        <a href="{% url 'app_finance:recurring_list' %}" class="badge-chip">
+          จัดการ
+        </a>
+      </div>
+
+      {% if upcoming_recurring %}
+        <ul class="list-unstyled mb-0" style="font-size:13px;">
+          {% for item in upcoming_recurring %}
+            <li class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <div class="fw-semibold">
+                  {{ item.obj.name|default:item.obj.category.name|default:"รายการประจำ" }}
+                </div>
+                <div class="text-secondary" style="font-size:11px;">
+                  บัญชี: {{ item.obj.account.name }}
+                  {% if item.obj.category %}
+                    · หมวด: {{ item.obj.category.name }}
+                  {% endif %}
+                </div>
+              </div>
+              <div class="text-end">
+                <div class="{% if item.obj.direction == 'OUT' %}text-danger{% else %}text-success{% endif %}">
+                  {% if item.obj.direction == 'OUT' %}-{% endif %}
+                  ฿{{ item.obj.amount|floatformat:0 }}
+                </div>
+                <div class="text-secondary" style="font-size:11px;">
+                  {{ item.next_date|date:"d/m" }}
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มี recurring สำหรับเดือนนี้ หรือเลยวันไปหมดแล้ว
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- การ์ดสรุปวันนี้ -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">สรุปวันนี้</div>
+      <div class="text-secondary" style="font-size:12px;">
+        ข้อมูลประจำวันที่ {{ today|date:"d/m/Y" }}
+      </div>
+    </div>
+    <span class="badge-chip">Today</span>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">รายรับวันนี้</div>
+      <div class="fw-semibold text-success" style="font-size:18px;">
+        ฿{{ today_income|default_if_none:"0"|floatformat:2 }}
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">รายจ่ายวันนี้</div>
+      <div class="fw-semibold text-danger" style="font-size:18px;">
+        ฿{{ today_expense|default_if_none:"0"|floatformat:2 }}
+      </div>
+    </div>
+    <div class="col-12 col-md-4">
+      <div class="text-secondary" style="font-size:12px;">สุทธิวันนี้</div>
+      <div class="fw-semibold"
+           style="font-size:18px;
+             {% if today_net > 0 %}
+               color:#22c55e;
+             {% elif today_net < 0 %}
+               color:#f97373;
+             {% else %}
+               color:#e5e7eb;
+             {% endif %}
+           ">
+        ฿{{ today_net|default_if_none:"0"|floatformat:2 }}
+      </div>
+      {% if today_net < 0 %}
+        <div class="text-secondary" style="font-size:11px;">
+          วันนี้ใช้มากกว่ารายรับแล้ว ลองเช็คหมวดที่ใช้เยอะใน Dashboard ด้านล่างดูคับ
+        </div>
+      {% elif today_net > 0 %}
+        <div class="text-secondary" style="font-size:11px;">
+          วันนี้ยังบวกอยู่ สุดยอดดด 💚
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:11px;">
+          วันนี้ยังสมดุลพอดี
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<!-- กราฟแนวโน้ม 6 เดือนล่าสุด -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">แนวโน้มรายรับ-รายจ่าย 6 เดือนล่าสุด</div>
+      <div class="text-secondary" style="font-size:12px;">
+        ดูภาพรวมการเงินย้อนหลังแบบเดือนต่อเดือน
+      </div>
+    </div>
+    <span class="badge-chip">Trend</span>
+  </div>
+  <div style="height:220px; max-height:220px;">
+    <canvas id="incomeExpenseChart"></canvas>
+  </div>
+</div>
+
+<!-- กราฟวงกลม รายจ่ายตามหมวด -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">สัดส่วนรายจ่ายตามหมวด (เดือนนี้)</div>
+      <div class="text-secondary" style="font-size:12px;">
+        ดูว่าเดือนนี้ใช้เงินไปกับหมวดไหนมากที่สุด
+      </div>
+    </div>
+    <span class="badge-chip">Categories</span>
+  </div>
+  <div class="row g-3 align-items-center">
+    <div class="col-12 col-md-6">
+      <div style="height:220px; max-height:220px;">
+        <canvas id="expenseByCategoryChart"></canvas>
+      </div>
+    </div>
+    <div class="col-12 col-md-6">
+      {% if cat_labels %}
+        <div class="text-secondary" style="font-size:12px;">
+          หมวดที่แสดงในกราฟคือหมวดที่มีรายจ่ายจริงในเดือนนี้
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:12px;">
+          ยังไม่มีรายจ่ายจริงในเดือนนี้ ลองบันทึกรายจ่ายดูก่อนคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ประมาณการ -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div>
+      <div class="fw-semibold">ประมาณการเดือนนี้</div>
+      <div class="text-secondary" style="font-size:12px;">รายการที่ติ๊กเป็น “ประมาณการ”</div>
+    </div>
+    <span class="badge-chip">Estimate</span>
+  </div>
+  <div class="row g-3">
+    <div class="col-4">
+      <div class="text-secondary" style="font-size:12px;">รายรับประเมิน</div>
+      <div class="fw-semibold">฿{{ est_income|floatformat:2 }}</div>
+    </div>
+    <div class="col-4">
+      <div class="text-secondary" style="font-size:12px;">รายจ่ายประเมิน</div>
+      <div class="fw-semibold text-danger">฿{{ est_expense|floatformat:2 }}</div>
+    </div>
+    <div class="col-4">
+      <div class="text-secondary" style="font-size:12px;">สุทธิประเมิน</div>
+      <div class="fw-semibold {% if est_net < 0 %}text-danger{% else %}text-success{% endif %}">
+        ฿{{ est_net|floatformat:2 }}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- บัญชี -->
+  <div class="col-12 col-lg-5">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">บัญชี / กระเป๋า</div>
+        <span class="badge-chip">{{ accounts|length }} บัญชี</span>
+      </div>
+      {% if accounts %}
+        <div class="list-group list-group-flush">
+          {% for acc in accounts %}
+            <div class="list-group-item bg-transparent text-light border-secondary d-flex justify-content-between align-items-center py-2">
+              <div>
+                <div class="fw-semibold">{{ acc.name }}</div>
+                <div class="text-secondary" style="font-size:11px;">
+                  {{ acc.get_account_type_display }}
+                </div>
+              </div>
+              <div class="text-end">
+                {% if acc.current_balance < 0 %}
+                  <div class="text-danger">฿{{ acc.current_balance|floatformat:2 }}</div>
+                  <div class="text-secondary" style="font-size:11px;">(หนี้)</div>
+                {% else %}
+                  <div class="text-success">฿{{ acc.current_balance|floatformat:2 }}</div>
+                  <div class="text-secondary" style="font-size:11px;">(คงเหลือ)</div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีบัญชีเลย ลองไปเพิ่มที่เมนู “บัญชี” ด้านบน
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- รายการล่าสุด -->
+  <div class="col-12 col-lg-7">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">รายการล่าสุด</div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost btn-sm">
+            ทั้งหมด
+          </a>
+          <a href="{% url 'app_finance:transaction_create' %}" class="btn btn-brand btn-sm">
+            + เพิ่มรายการ
+          </a>
+        </div>
+      </div>
+
+      {% if recent_tx %}
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+            <thead>
+              <tr class="text-secondary">
+                <th>วันที่</th>
+                <th>บัญชี</th>
+                <th>ประเภท</th>
+                <th class="text-end">จำนวนเงิน</th>
+                <th>หมวด</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in recent_tx %}
+                <tr>
+                  <td>{{ t.date|date:"d/m" }}</td>
+                  <td>{{ t.account.name }}</td>
+                  <td>
+                    {% if t.direction == 'IN' %}
+                      <span class="badge-chip">เข้า</span>
+                    {% else %}
+                      <span class="badge-chip">ออก</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end {% if t.direction == 'OUT' %}text-danger{% else %}text-success{% endif %}">
+                    {% if t.direction == 'OUT' %}-{% endif %}
+                    ฿{{ t.amount|floatformat:2 }}
+                  </td>
+                  <td>{{ t.category.name|default:"-" }}</td>
+                  <td>
+                    {% if t.is_estimate %}
+                      <span class="badge-chip">ประมาณการ</span>
+                    {% else %}
+                      <span class="badge-chip">จริง</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีรายการ ลองกด “เพิ่มรายการ” ด้านบนดูคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add Transaction Modal -->
+<div class="modal fade" id="quickAddModal" tabindex="-1" aria-labelledby="quickAddModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#020617;border-radius:18px;border:1px solid #1f2937;">
+      <div class="modal-header">
+        <h5 class="modal-title" id="quickAddModalLabel">เพิ่มรายการด่วน</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{% url 'app_finance:transaction_create' %}?next={{ request.path }}">
+        <div class="modal-body">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+
+          <!-- Template -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">ใช้ Template</label>
+            <select id="quickTemplateSelect" class="form-select form-select-sm">
+              <option value="">-- ไม่ใช้ Template --</option>
+              {% for t in quick_templates %}
+                <option value="{{ t.id }}"
+                        data-direction="{{ t.direction }}"
+                        data-amount="{{ t.default_amount|default_if_none:'' }}"
+                        data-account="{{ t.account_id|default_if_none:'' }}"
+                        data-category="{{ t.category_id|default_if_none:'' }}"
+                        data-note="{{ t.note|default_if_none:'' }}"
+                        data-tags="{% for tag in t.tags.all %}{{ tag.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+                  {{ t.name }}
+                </option>
+              {% endfor %}
+            </select>
+            <div class="form-text" style="font-size:11px;">
+              เลือก Template เพื่อให้ระบบกรอกข้อมูลให้แบบด่วน ๆ (เปลี่ยนได้ก่อนกดบันทึก)
+            </div>
+          </div>
+
+          <!-- วันที่ -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">วันที่</label>
+            <input type="date" name="date" class="form-control form-control-sm"
+                   value="{{ today|date:'Y-m-d' }}">
+          </div>
+
+          <!-- รายรับ / รายจ่าย -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">ประเภท</label>
+            <div class="d-flex gap-3">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="direction" id="quickDirOut" value="OUT" checked>
+                <label class="form-check-label" for="quickDirOut">รายจ่าย</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="direction" id="quickDirIn" value="IN">
+                <label class="form-check-label" for="quickDirIn">รายรับ</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- จำนวนเงิน -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">จำนวนเงิน</label>
+            <input type="number" step="0.01" name="amount" id="quickAmount"
+                   class="form-control form-control-sm" placeholder="เช่น 120.00">
+          </div>
+
+          <!-- บัญชี -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">บัญชี</label>
+            <select name="account" id="quickAccount" class="form-select form-select-sm">
+              <option value="">-- เลือกบัญชี --</option>
+              {% for acc in accounts %}
+                <option value="{{ acc.id }}">{{ acc.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- หมวด -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">หมวด</label>
+            <select name="category" id="quickCategory" class="form-select form-select-sm">
+              <option value="">-- เลือกหมวด --</option>
+              {% for c in all_categories %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Tag -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">Tag</label>
+            <select name="tags" id="quickTags" class="form-select form-select-sm" multiple>
+              {% for tag in all_tags %}
+                <option value="{{ tag.id }}">{{ tag.name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text" style="font-size:11px;">
+              กด Ctrl/Command เพื่อเลือกหลาย Tag
+            </div>
+          </div>
+
+          <!-- note -->
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">หมายเหตุ</label>
+            <input type="text" name="note" id="quickNote"
+                   class="form-control form-control-sm" placeholder="เช่น ร้าน, สถานที่, รายละเอียดอื่น ๆ">
+          </div>
+
+          <!-- ซ่อนฟิลด์อื่นๆ ตาม TransactionForm ที่ต้องการ, เช่น is_estimate -->
+          <input type="hidden" name="is_estimate" value="0">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost btn-sm" data-bs-dismiss="modal">
+            ยกเลิก
+          </button>
+          <button type="submit" class="btn btn-brand btn-sm">
+            บันทึกรายการด่วน
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function() {
+      // ===== กราฟเส้น รายรับ-รายจ่าย 6 เดือนล่าสุด =====
+      const lineCanvas = document.getElementById('incomeExpenseChart');
+      if (lineCanvas) {
+        const labels = {{ chart_labels|safe }};
+        const incomeData = {{ chart_income|safe }};
+        const expenseData = {{ chart_expense|safe }};
+
+        new Chart(lineCanvas, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: 'รายรับ',
+                data: incomeData,
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 3,
+                borderColor: 'rgba(34,197,94,1)',
+                backgroundColor: 'rgba(34,197,94,0.15)',
+                fill: true,
+              },
+              {
+                label: 'รายจ่าย',
+                data: expenseData,
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 3,
+                borderColor: 'rgba(248,113,113,1)',
+                backgroundColor: 'rgba(248,113,113,0.15)',
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: '#e5e7eb',
+                  font: { size: 11 }
+                }
+              },
+            },
+            scales: {
+              x: {
+                ticks: { color: '#9ca3af', font: { size: 11 } },
+                grid: { color: 'rgba(30,41,59,0.6)' }
+              },
+              y: {
+                ticks: { color: '#9ca3af', font: { size: 11 } },
+                grid: { color: 'rgba(30,41,59,0.6)' }
+              },
+            },
+          },
+        });
+      }
+
+      // ===== กราฟวงกลม รายจ่ายตามหมวด =====
+      const pieCanvas = document.getElementById('expenseByCategoryChart');
+      if (pieCanvas) {
+        const catLabels = {{ cat_labels|safe }};
+        const catValues = {{ cat_values|safe }};
+
+        if (catLabels.length > 0 && catValues.length > 0) {
+          new Chart(pieCanvas, {
+            type: 'doughnut',
+            data: {
+              labels: catLabels,
+              datasets: [{
+                data: catValues,
+                borderWidth: 1,
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: '#e5e7eb',
+                    font: { size: 11 }
+                  }
+                }
+              }
+            }
+          });
+        }
+      }
+
+      // ===== Quick Add Template Autofill =====
+      (function(){
+        const tplSelect = document.getElementById("quickTemplateSelect");
+        if (!tplSelect) return;
+
+        const amountInput = document.getElementById("quickAmount");
+        const accountSelect = document.getElementById("quickAccount");
+        const categorySelect = document.getElementById("quickCategory");
+        const noteInput = document.getElementById("quickNote");
+        const tagSelect = document.getElementById("quickTags");
+        const dirOut = document.getElementById("quickDirOut");
+        const dirIn = document.getElementById("quickDirIn");
+
+        tplSelect.addEventListener("change", function(){
+          const opt = tplSelect.options[tplSelect.selectedIndex];
+          if (!opt || !opt.value) {
+            return;
+          }
+          const dir = opt.getAttribute("data-direction");
+          const amt = opt.getAttribute("data-amount");
+          const accId = opt.getAttribute("data-account");
+          const catId = opt.getAttribute("data-category");
+          const note = opt.getAttribute("data-note");
+          const tags = opt.getAttribute("data-tags") || "";
+
+          if (dir === "IN") {
+            dirIn.checked = true;
+          } else {
+            dirOut.checked = true;
+          }
+          if (amt && amountInput) amountInput.value = amt;
+          if (noteInput) noteInput.value = note || "";
+
+          if (accountSelect) {
+            for (const o of accountSelect.options) {
+              o.selected = (accId && o.value === accId);
+            }
+          }
+          if (categorySelect) {
+            for (const o of categorySelect.options) {
+              o.selected = (catId && o.value === catId);
+            }
+          }
+          if (tagSelect) {
+            const tagIds = tags ? tags.split(",") : [];
+            for (const o of tagSelect.options) {
+              o.selected = tagIds.includes(o.value);
+            }
+          }
+        });
+      })();
+
+      // ===== Keyboard shortcut: Shift + A เปิด Quick Add =====
+      document.addEventListener("keydown", function(e){
+        const target = e.target;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.tagName === "SELECT")) {
+          return;
+        }
+        if ((e.key === "A" || e.key === "a") && e.shiftKey) {
+          const modalEl = document.getElementById("quickAddModal");
+          if (!modalEl || typeof bootstrap === "undefined") return;
+          const modal = new bootstrap.Modal(modalEl);
+          modal.show();
+        }
+      });
+
+    })();
+  </script>
+{% endblock %}

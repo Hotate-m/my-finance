@@ -1,0 +1,111 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}บัญชี / กระเป๋า{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h1 class="h3 mb-1">บัญชี / กระเป๋า</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      จัดการกระเป๋าเงินสด, บัญชีธนาคาร, บัตรเครดิต, เงินกู้ของโอ็ต
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <!-- ฟอร์มเพิ่มบัญชี -->
+  <div class="col-12 col-lg-5">
+    <div class="card-soft p-3">
+      <h2 class="h6 mb-3">เพิ่มบัญชีใหม่</h2>
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">ชื่อบัญชี / กระเป๋า</label>
+          {{ form.name }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">ประเภท</label>
+          {{ form.account_type }}
+        </div>
+        <div class="mb-2">
+          <label class="form-label">ยอดตั้งต้น (Opening balance)</label>
+          {{ form.opening_balance }}
+          <div class="form-text text-secondary" style="font-size:11px;">
+            ถ้าเป็นหนี้ เช่น เงินกู้เริ่มต้น 300,000 ให้ใส่ -300000
+          </div>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">วงเงิน (Credit limit) ถ้ามี</label>
+          {{ form.credit_limit }}
+        </div>
+        <div class="form-check mb-3">
+          {{ form.is_active }}
+          <label class="form-check-label">ใช้งานอยู่</label>
+        </div>
+        <button type="submit" class="btn btn-brand w-100">
+          บันทึกบัญชีใหม่
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ตารางบัญชี -->
+  <div class="col-12 col-lg-7">
+    <div class="card-soft p-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">รายการบัญชีทั้งหมด</h2>
+        <span class="badge-chip bg-light text-dark">{{ accounts|length }} บัญชี</span>
+      </div>
+
+      {% if accounts %}
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+            <thead>
+              <tr class="text-secondary">
+                <th>ชื่อ</th>
+                <th>ประเภท</th>
+                <th class="text-end">ยอดตั้งต้น</th>
+                <th class="text-end">ยอดปัจจุบัน</th>
+                <th class="text-end">วงเงิน</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for acc in accounts %}
+                <tr>
+                  <td>{{ acc.name }}</td>
+                  <td>{{ acc.get_account_type_display }}</td>
+                  <td class="text-end">
+                    ฿{{ acc.opening_balance|floatformat:2 }}
+                  </td>
+                  <td class="text-end {% if acc.current_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                    ฿{{ acc.current_balance|floatformat:2 }}
+                  </td>
+                  <td class="text-end">
+                    {% if acc.credit_limit %}
+                      ฿{{ acc.credit_limit|floatformat:2 }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if acc.is_active %}
+                      <span class="badge-chip bg-success-subtle text-success">ใช้งาน</span>
+                    {% else %}
+                      <span class="badge-chip bg-secondary">ปิดใช้งาน</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีบัญชีเลย ลองเพิ่มจากฟอร์มด้านซ้ายได้เลยคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

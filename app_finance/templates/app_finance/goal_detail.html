@@ -1,0 +1,162 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}เป้าหมาย: {{ goal.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">{{ goal.name }}</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      เป้าหมายเก็บเงินส่วนตัว ·
+      {% if goal.target_date %}
+        ถึงเป้า: {{ goal.target_date|date:"d/m/Y" }}
+        {% if days_left is not None %}
+          (เหลือ {{ days_left }} วัน)
+        {% endif %}
+      {% else %}
+        ยังไม่ได้กำหนดวันเป้า
+      {% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{% url 'app_finance:goals_list' %}" class="btn btn-ghost btn-sm">
+      ← กลับไปหน้าเป้าหมายทั้งหมด
+    </a>
+    <a href="{% url 'app_finance:transaction_create' %}?goal={{ goal.id }}&type={{ goal.direction }}" class="btn btn-brand btn-sm">
+      + เพิ่มรายการให้เป้าหมายนี้
+    </a>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-12 col-lg-5">
+    <div class="card-soft p-3 h-100">
+      <div class="mb-2">
+        <div class="text-secondary" style="font-size:12px;">บัญชีที่เกี่ยวข้อง</div>
+        <div class="fw-semibold">
+          {{ goal.account.name|default:"-" }}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="text-secondary" style="font-size:12px;">ประเภทที่นับเป็นความคืบหน้า</div>
+        <div class="fw-semibold">
+          {% if goal.direction == "IN" %}เงินเข้า{% else %}เงินออก{% endif %}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="text-secondary" style="font-size:12px;">ยอดเป้าหมาย</div>
+        <div class="fw-semibold">
+          ฿{{ target|floatformat:2 }}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="text-secondary" style="font-size:12px;">ทำได้แล้ว</div>
+        <div class="fw-semibold text-success">
+          ฿{{ done|floatformat:2 }}
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="text-secondary" style="font-size:12px;">คงเหลือ</div>
+        <div class="fw-semibold {% if remaining < 0 %}text-success{% else %}text-secondary{% endif %}">
+          ฿{{ remaining|floatformat:2 }}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-secondary" style="font-size:12px;">ความคืบหน้า</span>
+          {% if percent is not None %}
+            <span style="font-size:12px;">{{ percent|floatformat:0 }}%</span>
+          {% endif %}
+        </div>
+        {% if percent is not None %}
+          <div style="width:100%;height:9px;border-radius:999px;background:#020617;overflow:hidden;border:1px solid rgba(148,163,184,.7);">
+            {% with p=percent %}
+              <div style="
+                height:100%;
+                width:{% if p > 100 %}100{% else %}{{ p|floatformat:0 }}{% endif %}%;
+                {% if p < 50 %}
+                  background:linear-gradient(to right,#22c55e,#4ade80);
+                {% elif p < 100 %}
+                  background:linear-gradient(to right,#eab308,#f97316);
+                {% else %}
+                  background:linear-gradient(to right,#22c55e,#16a34a);
+                {% endif %}
+              "></div>
+            {% endwith %}
+          </div>
+        {% else %}
+          <div class="text-secondary" style="font-size:12px;">
+            ยังไม่ได้ตั้งจำนวนเงินเป้าหมาย จึงแสดงเปอร์เซ็นต์ไม่ได้
+          </div>
+        {% endif %}
+      </div>
+
+      {% if goal.note %}
+        <div class="mt-3">
+          <div class="text-secondary" style="font-size:12px;">หมายเหตุเป้าหมาย</div>
+          <div style="font-size:13px;">{{ goal.note }}</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-7">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">รายการที่เกี่ยวข้องกับเป้าหมายนี้</div>
+        <span class="badge-chip">{{ transactions|length }} รายการ</span>
+      </div>
+
+      {% if transactions %}
+        <div class="table-responsive">
+          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+            <thead>
+              <tr class="text-secondary">
+                <th>วันที่</th>
+                <th>บัญชี</th>
+                <th>หมวด</th>
+                <th class="text-end">จำนวนเงิน</th>
+                <th>หมายเหตุ</th>
+                <th class="text-center">หลักฐาน</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in transactions %}
+                <tr>
+                  <td>{{ t.date|date:"d/m/Y" }}</td>
+                  <td>{{ t.account.name }}</td>
+                  <td>{{ t.category.name|default:"-" }}</td>
+                  <td class="text-end {% if t.direction == 'OUT' %}text-danger{% else %}text-success{% endif %}">
+                    {% if t.direction == 'OUT' %}-{% endif %}
+                    ฿{{ t.amount|floatformat:2 }}
+                  </td>
+                  <td>{{ t.note|default:"-" }}</td>
+                  <td class="text-center">
+                    {% if t.proof_file %}
+                      <a href="{{ t.proof_file.url }}" target="_blank" title="เปิดใบเสร็จ">
+                        🧾
+                      </a>
+                    {% else %}
+                      <span class="text-secondary" style="font-size:11px;">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีรายการที่ผูกกับเป้าหมายนี้  
+          ลองกดปุ่ม “เพิ่มรายการให้เป้าหมายนี้” ด้านบนขวาดูคับ
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

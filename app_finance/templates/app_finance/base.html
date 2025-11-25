@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}My Finance{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Google Fonts: Prompt (TH/EN) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== ตัวแปรพื้นฐานที่ใช้ร่วมกัน ===== */
+    :root{
+      --radius-xl:22px;
+      --radius-lg:18px;
+      --radius-pill:999px;
+      --shadow-strong:0 24px 70px rgba(15,23,42,.95);
+    }
+
+    /* ===== โหมดมืด (ธีมเดิมของโอ็ต) ===== */
+    html[data-theme="dark"]{
+      --brand:#16a34a;         /* เขียวมืดลง */
+      --brand-dark:#15803d;
+      --brand-soft:#bbf7d0;
+
+      --text-main:#e5e7eb;
+      --text-muted:#9ca3af;
+
+      --bg:#020617;
+      --bg-elevated:#020617;
+      --border-subtle:rgba(148,163,184,.3);
+
+      --shadow-strong:0 24px 70px rgba(15,23,42,.95);
+    }
+
+    /* ===== โหมดสว่าง (พื้นขาว) ===== */
+    html[data-theme="light"]{
+      --brand:#16a34a;
+      --brand-dark:#15803d;
+      --brand-soft:#dcfce7;
+
+      --text-main:#0f172a;
+      --text-muted:#6b7280;
+
+      --bg:#f3f4f6;
+      --bg-elevated:#ffffff;
+      --border-subtle:#e5e7eb;
+
+      --shadow-strong:0 18px 40px rgba(15,23,42,.08);
+    }
+
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: "Prompt", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color:var(--text-main);
+      background:var(--bg);
+    }
+
+    /* พื้นหลังแบบ gradient เฉพาะโหมดมืด */
+    html[data-theme="dark"] body{
+      background:
+        radial-gradient(circle at top, rgba(74,222,128,.18), transparent 60%),
+        radial-gradient(circle at bottom, rgba(37,99,235,.18), transparent 55%),
+        #020617;
+    }
+
+    html[data-theme="light"] body{
+      background:var(--bg);
+    }
+
+    /* ===== Nav dropdown ===== */
+    .nav-links{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      font-size:14px;
+    }
+    .nav-dropdown{
+      position:relative;
+    }
+    .nav-dropdown-toggle{
+      border:none;
+      background:transparent;
+      color:inherit;
+      font:inherit;
+      padding:4px 0;
+      display:flex;
+      align-items:center;
+      gap:4px;
+      cursor:pointer;
+    }
+    .nav-dropdown-toggle:focus{
+      outline:none;
+    }
+    .nav-caret{
+      font-size:10px;
+      opacity:.7;
+    }
+    .nav-dropdown-menu{
+      position:absolute;
+      top:100%;
+      left:0;
+      min-width:180px;
+      background:rgba(15,23,42,.98);
+      border-radius:12px;
+      padding:6px 0;
+      box-shadow:0 18px 45px rgba(15,23,42,.7);
+      border:1px solid rgba(148,163,184,.35);
+      opacity:0;
+      pointer-events:none;
+      transform:translateY(6px);
+      transition:opacity .16s ease, transform .16s ease;
+      z-index:50;
+    }
+    .nav-dropdown:hover .nav-dropdown-menu{
+      opacity:1;
+      pointer-events:auto;
+      transform:translateY(0);
+    }
+    .nav-dropdown-menu a{
+      display:block;
+      padding:6px 12px;
+      font-size:13px;
+      color:#e5e7eb;
+      text-decoration:none;
+      white-space:nowrap;
+    }
+    .nav-dropdown-menu a:hover{
+      background:rgba(34,197,94,.12);
+      color:#bbf7d0;
+    }
+
+    /* dropdown ในโหมดสว่าง */
+    html[data-theme="light"] .nav-dropdown-menu{
+      background:#ffffff;
+      border-color:#e5e7eb;
+      box-shadow:0 18px 45px rgba(15,23,42,.18);
+    }
+    html[data-theme="light"] .nav-dropdown-menu a{
+      color:#111827;
+    }
+    html[data-theme="light"] .nav-dropdown-menu a:hover{
+      background:#f3f4f6;
+      color:#065f46;
+    }
+
+    .app-shell{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .app-nav{
+      position:sticky;
+      top:0;
+      z-index:20;
+      backdrop-filter: blur(22px);
+      background:var(--bg-elevated);
+      border-bottom:1px solid var(--border-subtle);
+    }
+
+    /* โหมดมืดใช้ gradient เดิม */
+    html[data-theme="dark"] .app-nav{
+      background: linear-gradient(
+        to right,
+        rgba(15,23,42,.96),
+        rgba(15,23,42,.9),
+        rgba(15,23,42,.96)
+      );
+    }
+
+    .app-container{
+      width:min(1120px, 100% - 24px);
+      margin:0 auto;
+    }
+
+    .brand-mark{
+      width:32px;
+      height:32px;
+      border-radius:var(--radius-pill);
+      background: radial-gradient(circle at 30% 20%, #bbf7d0, #4ade80);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 0 0 1px rgba(34,197,94,.7), 0 0 24px rgba(34,197,94,.6);
+    }
+    .brand-mark span{
+      font-size:17px;
+      color:#052e16;
+      font-weight:900;
+    }
+
+    .brand-text{
+      font-weight:800;
+      letter-spacing:.04em;
+      font-size:16px;
+    }
+    .brand-sub{
+      font-size:11px;
+      color:var(--text-muted);
+    }
+
+    .nav-links a{
+      font-size:13px;
+      border-radius:999px;
+      padding:6px 12px;
+      color:var(--text-muted);
+      text-decoration:none;
+      border:1px solid transparent;
+    }
+    .nav-links a:hover{
+      color:var(--text-main);
+      border-color:rgba(148,163,184,.6);
+      background:rgba(15,23,42,.7);
+    }
+    html[data-theme="light"] .nav-links a:hover{
+      background:rgba(243,244,246,1);
+    }
+
+    /* ปุ่มเขียวหลัก – ลดความฟุ้งให้ลงอีก */
+    .btn-brand{
+      background:var(--brand);
+      border:1px solid var(--brand-dark);
+      color:#f9fafb;
+      font-weight:600;
+      border-radius:var(--radius-pill);
+      padding-inline:16px;
+      box-shadow:0 3px 8px rgba(22,163,74,.25); /* เงาเบามาก */
+      font-size:13px;
+      transition:background .16s ease, box-shadow .16s ease;
+    }
+    .btn-brand:hover{
+      background:var(--brand-dark);
+      color:#f9fafb;
+      box-shadow:0 4px 10px rgba(22,163,74,.30);
+    }
+    .btn-brand:active{
+      box-shadow:0 2px 6px rgba(22,163,74,.25);
+    }
+
+    .btn-ghost{
+      border-radius:var(--radius-pill);
+      border:1px solid var(--border-subtle);
+      color:var(--text-main);
+      font-size:13px;
+      padding-inline:14px;
+      background:rgba(15,23,42,.7);
+      box-shadow:none;
+    }
+    .btn-ghost:hover{
+      background:rgba(15,23,42,1);
+      border-color:rgba(209,213,219,1);
+      color:#f9fafb;
+    }
+    html[data-theme="light"] .btn-ghost{
+      background:#ffffff;
+      color:var(--text-muted);
+    }
+    html[data-theme="light"] .btn-ghost:hover{
+      background:#f3f4f6;
+      color:var(--text-main);
+      border-color:#d1d5db;
+    }
+
+    /* ปุ่มออกจากระบบ = แดง */
+    .btn-logout{
+      border-radius:var(--radius-pill);
+      font-size:13px;
+      padding-inline:14px;
+      border:1px solid #ef4444;   /* ขอบแดงสด */
+      background:#b91c1c;         /* แดงเข้มชัด */
+      color:#fee2e2;
+      box-shadow:0 3px 8px rgba(185,28,28,.4);
+    }
+    .btn-logout:hover{
+      background:#dc2626;         /* hover แดงสดขึ้น */
+      border-color:#f97373;
+      color:#fef2f2;
+      box-shadow:0 4px 10px rgba(239,68,68,.55);
+    }
+    html[data-theme="light"] .btn-logout{
+      background:#ef4444;
+      color:#ffffff;
+      border-color:#b91c1c;
+      box-shadow:0 3px 8px rgba(248,113,113,.35);
+    }
+    html[data-theme="light"] .btn-logout:hover{
+      background:#dc2626;
+      color:#ffffff;
+      border-color:#991b1b;
+      box-shadow:0 4px 10px rgba(248,113,113,.5);
+    }
+
+    /* ===== ฟอร์ม: ช่องกรอกทุกหน้า (รวมหน้า login) ===== */
+    html[data-theme="dark"] .form-control{
+      background:#020617;
+      color:#e5e7eb;
+      border-radius:999px;
+      border:1px solid rgba(31,41,55,.9);
+      box-shadow:0 0 0 1px rgba(15,23,42,1);
+      font-size:13px;
+    }
+    html[data-theme="dark"] .form-control::placeholder{
+      color:#6b7280;
+    }
+
+    html[data-theme="light"] .form-control{
+      background:#f9fafb;
+      color:#0f172a;
+      border-radius:999px;
+      border:1px solid #e5e7eb;
+      box-shadow:0 0 0 1px #e5e7eb;
+      font-size:13px;
+    }
+    html[data-theme="light"] .form-control::placeholder{
+      color:#9ca3af;
+    }
+
+    .form-control:focus{
+      outline:none;
+      box-shadow:0 0 0 1px #22c55e;
+      border-color:#22c55e;
+    }
+
+    .app-main{
+      flex:1;
+      padding:18px 0 30px;
+    }
+
+    .card-soft{
+      border-radius:var(--radius-lg);
+      border:1px solid var(--border-subtle);
+      box-shadow:var(--shadow-strong);
+      background:var(--bg-elevated);
+    }
+    /* โหมดมืดใช้ gradient เดิม */
+    html[data-theme="dark"] .card-soft{
+      background:radial-gradient(circle at top left, rgba(56,189,248,.08), transparent 55%),
+                 radial-gradient(circle at bottom right, rgba(74,222,128,.06), transparent 55%),
+                 rgba(15,23,42,.96);
+    }
+
+    .card-soft-ghost{
+      border-radius:var(--radius-lg);
+      border:1px solid var(--border-subtle);
+      background:var(--bg-elevated);
+    }
+    html[data-theme="dark"] .card-soft-ghost{
+      background:rgba(15,23,42,.85);
+      border:1px solid rgba(51,65,85,.9);
+    }
+
+    .badge-chip{
+      border-radius:999px;
+      padding:4px 10px;
+      font-size:11px;
+      border:1px solid var(--border-subtle);
+      background:var(--bg-elevated);
+      color:var(--text-muted);
+    }
+
+    .pill-label{
+      font-size:11px;
+      padding:2px 8px;
+      border-radius:999px;
+      border:1px solid var(--border-subtle);
+      color:var(--text-muted);
+    }
+
+    h1,h2,h3,h4,h5,h6{
+      margin:0;
+      color:#f9fafb;
+      letter-spacing:.01em;
+      font-weight:600;
+    }
+    html[data-theme="light"] h1,
+    html[data-theme="light"] h2,
+    html[data-theme="light"] h3,
+    html[data-theme="light"] h4,
+    html[data-theme="light"] h5,
+    html[data-theme="light"] h6{
+      color:#0f172a;
+    }
+
+    a{
+      text-decoration:none;
+    }
+
+    footer{
+      font-size:11px;
+      color:var(--text-muted);
+      padding-bottom:56px; /* กันชน quickbar บนมือถือ */
+    }
+
+    .table-dark{
+      --bs-table-bg: transparent;
+      --bs-table-border-color: rgba(30,41,59,.8);
+    }
+    .table-dark tbody tr:hover{
+      background:rgba(15,23,42,.9);
+    }
+    html[data-theme="light"] .table-dark{
+      --bs-table-bg: #ffffff;
+      --bs-table-border-color:#e5e7eb;
+    }
+    html[data-theme="light"] .table-dark tbody tr:hover{
+      background:#f9fafb;
+    }
+
+    /* Quickbar มือถือ */
+    .mobile-quickbar{
+      position:fixed;
+      left:0;
+      right:0;
+      bottom:0;
+      z-index:40;
+    }
+    .mobile-quickbar-inner{
+      background:rgba(15,23,42,.98);
+      border-top:1px solid rgba(148,163,184,.4);
+      box-shadow:0 -10px 30px rgba(15,23,42,.9);
+    }
+    html[data-theme="light"] .mobile-quickbar-inner{
+      background:#ffffff;
+      border-top:1px solid #e5e7eb;
+      box-shadow:0 -10px 25px rgba(15,23,42,.16);
+    }
+    .mobile-quickbar-btn{
+      flex:1;
+      border-radius:999px;
+      font-size:12px;
+      padding:7px 0;
+    }
+
+    @media (max-width: 768px){
+      .app-main{
+        padding-top:12px;
+        padding-bottom:80px; /* เผื่อ quickbar */
+      }
+      .brand-sub{
+        display:none;
+      }
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app-shell">
+  {% block navbar %}
+  <nav class="app-nav py-2">
+    <div class="app-container d-flex align-items-center justify-content-between gap-3">
+      <a href="{% url 'app_finance:home' %}" class="d-flex align-items-center gap-2" style="color:inherit;">
+        <div class="brand-mark">
+          <span>฿</span>
+        </div>
+        <div class="d-flex flex-column">
+          <span class="brand-text">OAT&nbsp;FINANCE</span>
+          <span class="brand-sub">Personal money cockpit</span>
+        </div>
+      </a>
+
+      <div class="d-flex align-items-center gap-2 d-none d-md-flex nav-links">
+        <!-- กลุ่มรายงาน -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-toggle">
+            รายงาน
+            <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="{% url 'app_finance:dashboard' %}">Dashboard</a>
+            <a href="{% url 'app_finance:summary_month' %}">สรุปเดือนนี้</a>
+            <a href="{% url 'app_finance:cash_calendar' %}">ปฏิทินเงิน</a>
+            <a href="{% url 'app_finance:debts_overview' %}">แผนปลดหนี้</a>
+            <a href="{% url 'app_finance:monthly_report' %}">รายงานรายเดือน (PDF)</a>
+          </div>
+        </div>
+
+        <!-- กลุ่มรายการ -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-toggle">
+            รายการ
+            <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="{% url 'app_finance:transactions_list' %}">รายการทั้งหมด</a>
+            <a href="{% url 'app_finance:recurring_list' %}">รายการประจำ</a>
+          </div>
+        </div>
+
+        <!-- กลุ่มตั้งค่า / โครงสร้าง -->
+        <div class="nav-dropdown">
+          <button class="nav-dropdown-toggle">
+            ตั้งค่า
+            <span class="nav-caret">▾</span>
+          </button>
+          <div class="nav-dropdown-menu">
+            <a href="{% url 'app_finance:accounts_manage' %}">บัญชี</a>
+            <a href="{% url 'app_finance:categories_manage' %}">หมวดหมู่</a>
+            <a href="{% url 'app_finance:goals_list' %}">เป้าหมาย</a>
+            <a href="{% url 'app_finance:budgets_overview' %}">งบประมาณ</a>
+            <a href="{% url 'app_finance:tools_home' %}">
+              เครื่องมือ
+            </a>
+            <a href="{% url 'app_finance:howto' %}">วิธีใช้งาน</a>
+          </div>
+        </div>
+
+        <!-- ปุ่มสลับ Theme -->
+        <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="เปลี่ยนธีม">
+          🌙
+        </button>
+
+        <!-- ปุ่มออกจากระบบ (แดง) -->
+        <a href="{% url 'logout' %}" class="btn btn-logout btn-sm">
+          ออกจากระบบ
+        </a>
+      </div>
+    </div>
+  </nav>
+  {% endblock navbar %}
+  <main class="app-main">
+    <div class="app-container">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- Quickbar เฉพาะมือถือ -->
+  <div class="mobile-quickbar d-md-none">
+    <div class="mobile-quickbar-inner py-2">
+      <div class="app-container">
+        <div class="d-flex gap-2">
+          <a href="{% url 'app_finance:transaction_create' %}?type=IN" class="btn btn-brand btn-sm mobile-quickbar-btn">
+            + รายรับ
+          </a>
+          <a href="{% url 'app_finance:transaction_create' %}?type=OUT" class="btn btn-ghost btn-sm mobile-quickbar-btn">
+            + รายจ่าย
+          </a>
+          <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost btn-sm mobile-quickbar-btn">
+            รายการ
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="py-3 text-center">
+    จัดระบบเงินให้โอ็ตสบายใจขึ้นทีละวัน 💚
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  (function(){
+    const root = document.documentElement;
+    const btn = document.getElementById("themeToggle");
+
+    function applyTheme(theme){
+      const t = (theme === "light" || theme === "dark") ? theme : "dark";
+      root.setAttribute("data-theme", t);
+      if (btn){
+        if (t === "dark"){
+          btn.innerHTML = "☀️";
+          btn.title = "เปลี่ยนเป็นโหมดสว่าง";
+        } else {
+          btn.innerHTML = "🌙";
+          btn.title = "เปลี่ยนเป็นโหมดมืด";
+        }
+      }
+    }
+
+    // โหลดธีมที่เคยเลือกไว้
+    const stored = localStorage.getItem("finance-theme");
+    if (stored){
+      applyTheme(stored);
+    } else {
+      // ใช้ค่าจาก attribute ปัจจุบัน (default = dark)
+      applyTheme(root.getAttribute("data-theme") || "dark");
+    }
+
+    if (btn){
+      btn.addEventListener("click", function(){
+        const current = root.getAttribute("data-theme") === "light" ? "light" : "dark";
+        const next = current === "light" ? "dark" : "light";
+        applyTheme(next);
+        localStorage.setItem("finance-theme", next);
+      });
+    }
+  })();
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>
