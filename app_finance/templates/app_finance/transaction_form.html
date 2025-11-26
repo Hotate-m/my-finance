@@ -1,81 +1,111 @@
 {% extends "app_finance/base.html" %}
 
-{% block title %}บันทึกรายรับ-รายจ่าย{% endblock %}
+{% block title %}
+  {% if goal %}
+    บันทึกรายการให้เป้าหมาย - {{ goal.name }}
+  {% else %}
+    เพิ่มรายการเงินใหม่
+  {% endif %}
+{% endblock %}
 
 {% block content %}
-<div class="mb-3">
-  <h1 class="h3 mb-1">บันทึกรายรับ-รายจ่าย</h1>
-  <div class="text-secondary" style="font-size:13px;">
-    เลือกบัญชี ประเภท (รายรับ/รายจ่าย) แล้วกรอกจำนวนเงิน — รองรับทั้งรายการจริงและรายการประมาณการ
+<div class="page-wrap" style="max-width:650px;margin:0 auto;padding:8px 0 32px;">
+  <!-- หัวข้อ + ปุ่มกลับ -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1 class="h4 mb-1">
+        {% if goal %}
+          บันทึกเงินเข้าเป้าหมาย
+        {% else %}
+          เพิ่มรายการเงินใหม่
+        {% endif %}
+      </h1>
+      <div class="text-secondary" style="font-size:12px;">
+        ใช้จดรายรับ–รายจ่ายให้ครบทุกบาท
+      </div>
+    </div>
+    <a href="javascript:history.back()" class="btn btn-ghost btn-sm d-none d-md-inline-flex">
+      ← ย้อนกลับ
+    </a>
+  </div>
+
+  <!-- ถ้ามาจาก Goal ให้แสดงแถบข้อมูล -->
+  {% if goal %}
+    <div class="card-soft-ghost p-2 mb-3" style="font-size:13px;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <div class="text-secondary" style="font-size:11px;">เป้าหมาย</div>
+          <div class="fw-semibold">{{ goal.name }}</div>
+          {% if goal.target_amount %}
+            <div class="text-secondary" style="font-size:11px;">
+              เป้าทั้งหมด ฿{{ goal.target_amount|floatformat:0 }}
+            </div>
+          {% endif %}
+        </div>
+        <span class="badge-chip">
+          ผูกกับเป้าหมายนี้
+        </span>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- การ์ดฟอร์มหลัก -->
+  <div class="card-soft p-3 p-md-4">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger py-2" style="font-size:13px;">
+          {% for err in form.non_field_errors %}
+            <div>{{ err }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {# วน field ทั้งหมด แต่จัด layout ให้สวยขึ้นบนมือถือ #}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label mb-1" style="font-size:13px;">
+            {{ field.label }}
+            {% if field.field.required %}
+              <span class="text-danger">*</span>
+            {% endif %}
+          </label>
+
+          {{ field }}
+
+          {% if field.help_text %}
+            <div class="form-text" style="font-size:11px;color:#9ca3af;">
+              {{ field.help_text|safe }}
+            </div>
+          {% endif %}
+
+          {% for error in field.errors %}
+            <div class="text-danger" style="font-size:12px;">
+              {{ error }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+
+      <!-- ปุ่มกด: ทำเป็นแถบด้านล่าง กดง่ายบนมือถือ -->
+      <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+        <button type="submit" class="btn btn-brand w-100">
+          💾 บันทึกรายการนี้
+        </button>
+        <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost w-100">
+          ยกเลิก
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- ปุ่มกลับเฉพาะมือถือ (อยู่ใต้สุด) -->
+  <div class="mt-3 d-md-none text-center">
+    <a href="javascript:history.back()" style="font-size:13px;" class="text-secondary">
+      ← กลับหน้าก่อนหน้า
+    </a>
   </div>
 </div>
-
-<div class="card-soft p-3">
-  <form method="post" enctype="multipart/form-data" novalidate>
-    {% csrf_token %}
-
-    <div class="row g-3">
-      <div class="col-12">
-        <label class="form-label">บัญชี / กระเป๋า</label>
-        {{ form.account }}
-      </div>
-
-      <div class="col-6">
-        <label class="form-label">วันที่</label>
-        {{ form.date }}
-      </div>
-      <div class="col-6">
-        <label class="form-label">ประเภท</label>
-        {{ form.direction }}
-      </div>
-
-      <div class="col-12">
-        <label class="form-label">จำนวนเงิน</label>
-        {{ form.amount }}
-      </div>
-
-      <div class="col-12">
-        <label class="form-label">หมวดหมู่</label>
-        {{ form.category }}
-        <div class="form-text text-secondary" style="font-size:11px;">
-          เช่น เงินเดือน, ค่าอาหาร, จ่ายหนี้บัตรเครดิต
-        </div>
-      </div>
-
-      <div class="col-12">
-        <div class="form-check mb-1">
-          {{ form.is_estimate }}
-          <label class="form-check-label">
-            เป็นรายการประมาณการ (ยังไม่ได้เกิดขึ้นจริง)
-          </label>
-        </div>
-        <div class="form-text text-secondary" style="font-size:11px;">
-          ถ้าติ๊ก → ใช้สำหรับวางแผนล่วงหน้า เช่น “จะจ่ายหนี้สิ้นเดือนนี้”
-        </div>
-      </div>
-
-      <div class="col-12">
-        <label class="form-label">หมายเหตุ (ถ้ามี)</label>
-        {{ form.note }}
-      </div>
-
-      <div class="mb-2">
-        <label class="form-label">ใบเสร็จ / หลักฐาน (ไฟล์/รูป)</label>
-        {{ form.proof_file }}
-        <div class="form-text" style="font-size:11px;">
-          รองรับรูปภาพ หรือไฟล์ PDF ขนาดไม่ใหญ่มาก
-        </div>
-      </div>
-    </div>
-
-    <div class="mt-4 d-flex justify-content-between gap-2">
-      <a href="{% url 'app_finance:dashboard' %}" class="btn btn-ghost w-50">
-        กลับไป Dashboard
-      </a>
-      <button type="submit" class="btn btn-brand w-50">
-        บันทึก
-      </button>
-    </div>
-  </form>
-</div>
 {% endblock %}
+  

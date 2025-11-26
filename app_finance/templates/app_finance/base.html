@@ -235,7 +235,7 @@
       font-weight:600;
       border-radius:var(--radius-pill);
       padding-inline:16px;
-      box-shadow:0 3px 8px rgba(22,163,74,.25); /* เงาเบามาก */
+      box-shadow:0 3px 8px rgba(22,163,74,.25);
       font-size:13px;
       transition:background .16s ease, box-shadow .16s ease;
     }
@@ -277,13 +277,13 @@
       border-radius:var(--radius-pill);
       font-size:13px;
       padding-inline:14px;
-      border:1px solid #ef4444;   /* ขอบแดงสด */
-      background:#b91c1c;         /* แดงเข้มชัด */
+      border:1px solid #ef4444;
+      background:#b91c1c;
       color:#fee2e2;
       box-shadow:0 3px 8px rgba(185,28,28,.4);
     }
     .btn-logout:hover{
-      background:#dc2626;         /* hover แดงสดขึ้น */
+      background:#dc2626;
       border-color:#f97373;
       color:#fef2f2;
       box-shadow:0 4px 10px rgba(239,68,68,.55);
@@ -442,7 +442,50 @@
       padding:7px 0;
     }
 
-    /* ===== ปรับให้เหมาะกับมือถือ (≤ 768px) ===== */
+    /* Offcanvas mobile menu */
+    .offcanvas-custom{
+      background:var(--bg-elevated);
+      color:var(--text-main);
+      border-left:1px solid var(--border-subtle);
+    }
+    .offcanvas-custom .offcanvas-title{
+      font-size:15px;
+      font-weight:600;
+    }
+    .offcanvas-custom .btn-close{
+      filter:invert(1);
+    }
+    html[data-theme="light"] .offcanvas-custom .btn-close{
+      filter:none;
+    }
+    .mobile-nav-link{
+      display:block;
+      width:100%;
+      text-align:left;
+      padding:8px 10px;
+      border-radius:12px;
+      font-size:14px;
+      color:var(--text-main);
+      border:1px solid transparent;
+      background:transparent;
+    }
+    .mobile-nav-link:hover{
+      background:rgba(15,23,42,.8);
+      border-color:var(--border-subtle);
+      text-decoration:none;
+    }
+    html[data-theme="light"] .mobile-nav-link:hover{
+      background:#f3f4f6;
+    }
+    .mobile-nav-section-title{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--text-muted);
+      margin-top:8px;
+      margin-bottom:4px;
+    }
+
     @media (max-width: 768px){
       .app-main{
         padding-top:12px;
@@ -450,59 +493,6 @@
       }
       .brand-sub{
         display:none;
-      }
-
-      .app-container{
-        width:100%;
-        padding-inline:10px;
-      }
-
-      .card-soft,
-      .card-soft-ghost{
-        border-radius:14px;
-      }
-
-      h1.h3{
-        font-size:18px;
-      }
-
-      .btn-sm{
-        font-size:12px;
-        padding-block:5px;
-      }
-
-      .table{
-        font-size:12px;
-      }
-      .table thead{
-        font-size:11px;
-      }
-      .table-responsive{
-        -webkit-overflow-scrolling:touch;
-      }
-    }
-
-    /* ===== มือถือจอเล็กมาก (≤ 576px) ===== */
-    @media (max-width: 576px){
-      body{
-        font-size:13px;
-      }
-
-      .card-soft,
-      .card-soft-ghost{
-        padding:12px 14px;
-      }
-
-      .mobile-quickbar-btn{
-        font-size:11px;
-        padding-block:6px;
-      }
-
-      .mb-3{
-        margin-bottom:0.9rem !important;
-      }
-      .mb-4{
-        margin-bottom:1.1rem !important;
       }
     }
   </style>
@@ -514,6 +504,7 @@
   {% block navbar %}
   <nav class="app-nav py-2">
     <div class="app-container d-flex align-items-center justify-content-between gap-3">
+      <!-- โลโก้ -->
       <a href="{% url 'app_finance:home' %}" class="d-flex align-items-center gap-2" style="color:inherit;">
         <div class="brand-mark">
           <span>฿</span>
@@ -524,7 +515,8 @@
         </div>
       </a>
 
-      <div class="d-flex align-items-center gap-2 d-none d-md-flex nav-links">
+      <!-- เมนูเดสก์ท็อป -->
+      <div class="d-flex align-items-center gap-2 d-none d-md-flex nav-links ms-auto">
         <!-- กลุ่มรายงาน -->
         <div class="nav-dropdown">
           <button class="nav-dropdown-toggle">
@@ -568,8 +560,8 @@
           </div>
         </div>
 
-        <!-- ปุ่มสลับ Theme -->
-        <button id="themeToggle" type="button" class="btn btn-ghost btn-sm" title="เปลี่ยนธีม">
+        <!-- ปุ่มสลับ Theme (เดสก์ท็อป) -->
+        <button type="button" class="btn btn-ghost btn-sm js-theme-toggle" title="เปลี่ยนธีม">
           🌙
         </button>
 
@@ -578,17 +570,64 @@
           ออกจากระบบ
         </a>
       </div>
+
+      <!-- ปุ่มเมนูมือถือ (Hamburger) -->
+      <div class="d-flex d-md-none ms-auto">
+        <button class="btn btn-ghost btn-sm" type="button"
+                data-bs-toggle="offcanvas" data-bs-target="#mobileNav"
+                aria-controls="mobileNav" aria-label="เมนู">
+          ☰
+        </button>
+      </div>
     </div>
   </nav>
   {% endblock navbar %}
+
   <main class="app-main">
     <div class="app-container">
       {% block content %}{% endblock %}
     </div>
   </main>
 
+  <!-- Offcanvas เมนูมือถือ -->
+  <div class="offcanvas offcanvas-end offcanvas-custom" tabindex="-1" id="mobileNav" aria-labelledby="mobileNavLabel">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="mobileNavLabel">เมนู OAT Finance</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="mobile-nav-section-title">ภาพรวม</div>
+      <a href="{% url 'app_finance:home' %}" class="mobile-nav-link">หน้าแรก</a>
+      <a href="{% url 'app_finance:dashboard' %}" class="mobile-nav-link">Dashboard</a>
+      <a href="{% url 'app_finance:summary_month' %}" class="mobile-nav-link">สรุปเดือนนี้</a>
+      <a href="{% url 'app_finance:cash_calendar' %}" class="mobile-nav-link">ปฏิทินเงิน</a>
+      <a href="{% url 'app_finance:monthly_report' %}" class="mobile-nav-link">รายงานรายเดือน (PDF)</a>
+
+      <div class="mobile-nav-section-title">รายการ</div>
+      <a href="{% url 'app_finance:transactions_list' %}" class="mobile-nav-link">รายการทั้งหมด</a>
+      <a href="{% url 'app_finance:recurring_list' %}" class="mobile-nav-link">รายการประจำ</a>
+
+      <div class="mobile-nav-section-title">โครงสร้าง & แผน</div>
+      <a href="{% url 'app_finance:accounts_manage' %}" class="mobile-nav-link">บัญชี</a>
+      <a href="{% url 'app_finance:categories_manage' %}" class="mobile-nav-link">หมวดหมู่</a>
+      <a href="{% url 'app_finance:goals_list' %}" class="mobile-nav-link">เป้าหมาย</a>
+      <a href="{% url 'app_finance:budgets_overview' %}" class="mobile-nav-link">งบประมาณ</a>
+      <a href="{% url 'app_finance:tools_home' %}" class="mobile-nav-link">เครื่องมือ</a>
+
+      <div class="mobile-nav-section-title">อื่น ๆ</div>
+      <a href="{% url 'app_finance:howto' %}" class="mobile-nav-link">วิธีใช้งาน</a>
+
+      <button type="button" class="mobile-nav-link js-theme-toggle mt-2">
+        เปลี่ยนธีม (สว่าง / มืด)
+      </button>
+
+      <a href="{% url 'logout' %}" class="mobile-nav-link mt-2" style="color:#fecaca;border-color:#fecaca;">
+        ออกจากระบบ
+      </a>
+    </div>
+  </div>
+
   <!-- Quickbar เฉพาะมือถือ -->
-  {% if user.is_authenticated %}
   <div class="mobile-quickbar d-md-none">
     <div class="mobile-quickbar-inner py-2">
       <div class="app-container">
@@ -606,7 +645,6 @@
       </div>
     </div>
   </div>
-  {% endif %}
 
   <footer class="py-3 text-center">
     จัดระบบเงินให้โอ็ตสบายใจขึ้นทีละวัน 💚
@@ -618,12 +656,14 @@
 <script>
   (function(){
     const root = document.documentElement;
-    const btn = document.getElementById("themeToggle");
+    const toggleButtons = document.querySelectorAll(".js-theme-toggle");
 
     function applyTheme(theme){
       const t = (theme === "light" || theme === "dark") ? theme : "dark";
       root.setAttribute("data-theme", t);
-      if (btn){
+
+      toggleButtons.forEach(btn => {
+        if (!btn) return;
         if (t === "dark"){
           btn.innerHTML = "☀️";
           btn.title = "เปลี่ยนเป็นโหมดสว่าง";
@@ -631,7 +671,7 @@
           btn.innerHTML = "🌙";
           btn.title = "เปลี่ยนเป็นโหมดมืด";
         }
-      }
+      });
     }
 
     // โหลดธีมที่เคยเลือกไว้
@@ -639,18 +679,17 @@
     if (stored){
       applyTheme(stored);
     } else {
-      // ใช้ค่าจาก attribute ปัจจุบัน (default = dark)
       applyTheme(root.getAttribute("data-theme") || "dark");
     }
 
-    if (btn){
+    toggleButtons.forEach(btn => {
       btn.addEventListener("click", function(){
         const current = root.getAttribute("data-theme") === "light" ? "light" : "dark";
         const next = current === "light" ? "dark" : "light";
         applyTheme(next);
         localStorage.setItem("finance-theme", next);
       });
-    }
+    });
   })();
 </script>
 
