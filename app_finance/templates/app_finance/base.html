@@ -442,6 +442,7 @@
       padding:7px 0;
     }
 
+    /* ===== ปรับให้เหมาะกับมือถือ (≤ 768px) ===== */
     @media (max-width: 768px){
       .app-main{
         padding-top:12px;
@@ -449,6 +450,59 @@
       }
       .brand-sub{
         display:none;
+      }
+
+      .app-container{
+        width:100%;
+        padding-inline:10px;
+      }
+
+      .card-soft,
+      .card-soft-ghost{
+        border-radius:14px;
+      }
+
+      h1.h3{
+        font-size:18px;
+      }
+
+      .btn-sm{
+        font-size:12px;
+        padding-block:5px;
+      }
+
+      .table{
+        font-size:12px;
+      }
+      .table thead{
+        font-size:11px;
+      }
+      .table-responsive{
+        -webkit-overflow-scrolling:touch;
+      }
+    }
+
+    /* ===== มือถือจอเล็กมาก (≤ 576px) ===== */
+    @media (max-width: 576px){
+      body{
+        font-size:13px;
+      }
+
+      .card-soft,
+      .card-soft-ghost{
+        padding:12px 14px;
+      }
+
+      .mobile-quickbar-btn{
+        font-size:11px;
+        padding-block:6px;
+      }
+
+      .mb-3{
+        margin-bottom:0.9rem !important;
+      }
+      .mb-4{
+        margin-bottom:1.1rem !important;
       }
     }
   </style>
@@ -509,9 +563,7 @@
             <a href="{% url 'app_finance:categories_manage' %}">หมวดหมู่</a>
             <a href="{% url 'app_finance:goals_list' %}">เป้าหมาย</a>
             <a href="{% url 'app_finance:budgets_overview' %}">งบประมาณ</a>
-            <a href="{% url 'app_finance:tools_home' %}">
-              เครื่องมือ
-            </a>
+            <a href="{% url 'app_finance:tools_home' %}">เครื่องมือ</a>
             <a href="{% url 'app_finance:howto' %}">วิธีใช้งาน</a>
           </div>
         </div>
