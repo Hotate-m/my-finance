@@ -20,3 +20,5 @@ myfinance-venv/
 # Environment / secrets
 .env
 .env.*
+
+*.backup
