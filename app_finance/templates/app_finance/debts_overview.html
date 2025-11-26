@@ -7,160 +7,275 @@
   <div>
     <h1 class="h3 mb-1">แผนปลดหนี้</h1>
     <div class="text-secondary" style="font-size:13px;">
-      รวมยอดหนี้จากบัญชีประเภทบัตรเครดิตและเงินกู้ · ตั้งเป้าปลดหนี้ให้จบภายใน X เดือน
+      ภาพรวมหนี้จากบัตรเครดิต / เงินกู้ และแนวทางปลดหนี้แบบ Snowball / Avalanche
     </div>
-  </div>
-  <div class="text-secondary" style="font-size:11px;">
-    อัปเดตล่าสุด: {{ today|date:"d/m/Y" }}
   </div>
 </div>
 
-<div class="card-soft p-3 mb-3">
-  <form method="get" class="row g-2 align-items-end">
-    <div class="col-12 col-md-4">
-      <label class="form-label" style="font-size:12px;">
-        อยากปลดหนี้ให้หมดภายใน (เดือน)
-      </label>
-      <input type="number" name="months"
-             class="form-control form-control-sm"
-             min="1"
-             placeholder="เช่น 24"
-             value="{{ months_input }}">
-    </div>
-    <div class="col-12 col-md-2">
-      <button type="submit" class="btn btn-brand btn-sm w-100">
-        คำนวณแผนปลดหนี้
-      </button>
-    </div>
-    <div class="col-12 col-md-6 text-secondary" style="font-size:12px;">
-      ใส่จำนวนเดือนที่อยากให้หนี้ทุกก้อนหมด (เช่น 24 เดือน) ระบบจะประมาณยอดที่ควรจ่ายต่อเดือนของแต่ละบัญชี
-    </div>
-  </form>
-</div>
-
+<!-- การ์ดสรุป + Simulator -->
 <div class="row g-3 mb-3">
-  <div class="col-12 col-md-4">
-    <div class="card-soft p-3 h-100">
-      <div class="text-secondary" style="font-size:12px;">ยอดหนี้รวมทั้งหมด</div>
-      <div class="fw-semibold text-danger" style="font-size:20px;">
-        ฿{{ total_debt|floatformat:2 }}
-      </div>
+  <div class="col-12 col-md-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="fw-semibold mb-1">สรุปสถานะหนี้ตอนนี้</div>
+      {% if debt_count > 0 %}
+        <div class="mb-2">
+          <div class="text-secondary" style="font-size:12px;">จำนวนบัญชีที่เป็นหนี้</div>
+          <div class="fw-semibold" style="font-size:18px;">
+            {{ debt_count }} บัญชี
+          </div>
+        </div>
+        <div class="mb-2">
+          <div class="text-secondary" style="font-size:12px;">หนี้รวมตอนนี้ (ประมาณ)</div>
+          <div class="fw-semibold text-danger" style="font-size:22px;">
+            ฿{{ total_debt|floatformat:2 }}
+          </div>
+        </div>
+        <div class="text-secondary" style="font-size:11px;">
+          อิงจากยอดปัจจุบันของบัญชีประเภท "บัตรเครดิต" และ "เงินกู้" ที่ติดลบ
+        </div>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ตอนนี้ไม่มีบัญชีไหนที่เป็นหนี้ (ยอดติดลบ) เลย ถือว่าคลีนมาก ✨
+        </div>
+      {% endif %}
     </div>
   </div>
-  <div class="col-12 col-md-4">
+
+  <!-- Simulator -->
+  <div class="col-12 col-md-6">
     <div class="card-soft-ghost p-3 h-100">
-      <div class="text-secondary" style="font-size:12px;">ดอกเบี้ยต่อเดือน (ประมาณการ)</div>
-      <div class="fw-semibold text-warning" style="font-size:18px;">
-        ฿{{ total_monthly_interest|floatformat:2 }}
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div>
+          <div class="fw-semibold">ลองจำลองแผนจ่ายหนี้</div>
+          <div class="text-secondary" style="font-size:12px;">
+            ป้อนงบที่อยากจ่ายหนี้ต่อเดือน ระบบจะคำนวณแบบง่าย ๆ ให้ดู
+          </div>
+        </div>
+        <span class="badge-chip">Simulator</span>
       </div>
-      <div class="text-secondary" style="font-size:11px;">
-        คำนวณจากดอกเบี้ยต่อปีของแต่ละบัญชี หาร 12 (ไม่รวมลดต้นลดดอกจริง)
-      </div>
-    </div>
-  </div>
-  <div class="col-12 col-md-4">
-    <div class="card-soft-ghost p-3 h-100">
-      <div class="text-secondary" style="font-size:12px;">ยอดจ่ายขั้นต่ำรวม</div>
-      <div class="fw-semibold" style="font-size:18px;">
-        ฿{{ total_min_payment|floatformat:2 }}
-      </div>
-      <div class="text-secondary" style="font-size:11px;">
-        รวมเฉพาะบัญชีที่ตั้งเปอร์เซ็นต์จ่ายขั้นต่ำไว้
-      </div>
+
+      {% if debt_count == 0 or total_debt <= 0 %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีหนี้ให้จำลอง ลองเช็กยอดบัญชีบัตรเครดิต/เงินกู้ในหน้าบัญชีดูก่อนคับ
+        </div>
+      {% else %}
+        <form method="get" class="mb-2">
+          <div class="mb-2">
+            <label class="form-label" style="font-size:12px;">งบจ่ายหนี้ต่อเดือน (ประมาณ)</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">฿</span>
+              <input type="number" step="100" min="0"
+                     name="monthly_budget"
+                     value="{{ monthly_budget_raw }}"
+                     class="form-control"
+                     placeholder="เช่น 5000, 10000">
+            </div>
+            <div class="form-text text-secondary" style="font-size:11px;">
+              * เป็นการคำนวณแบบหยาบ ๆ: หนี้รวม ÷ งบต่อเดือน (ยังไม่คิดดอกเบี้ยจริง)
+            </div>
+          </div>
+          <button type="submit" class="btn btn-brand btn-sm w-100">
+            คำนวณแผนจ่ายหนี้
+          </button>
+        </form>
+
+        {% if monthly_budget_raw %}
+          {% if not monthly_budget or monthly_budget <= 0 %}
+            <div class="text-danger" style="font-size:12px;">
+              กรุณากรอกงบจ่ายหนี้ต่อเดือนเป็นตัวเลขมากกว่า 0 คับ
+            </div>
+          {% elif sim_months %}
+            <div class="mt-2">
+              <div class="text-secondary" style="font-size:12px;">ผลการจำลองแบบง่าย</div>
+              <div style="font-size:13px;">
+                ถ้าโอ็ตจ่ายหนี้เดือนละ
+                <span class="fw-semibold">฿{{ monthly_budget|floatformat:0 }}</span>
+                อย่างสม่ำเสมอ หนี้รวมประมาณ
+                <span class="fw-semibold text-danger">฿{{ total_debt|floatformat:0 }}</span>
+                จะหมดในราว ๆ
+                <span class="fw-semibold text-success">{{ sim_months }} เดือน</span>
+              </div>
+              <div class="text-secondary" style="font-size:11px;">
+                แนะนำ: ใช้แผน Snowball / Avalanche ด้านล่างร่วมด้วย เพื่อเลือกว่าจะโฟกัสบัญชีไหนก่อน
+              </div>
+            </div>
+          {% else %}
+            <div class="text-secondary" style="font-size:12px;">
+              ไม่สามารถคำนวณได้ ลองกรอกตัวเลขใหม่อีกครั้งคับ
+            </div>
+          {% endif %}
+        {% endif %}
+      {% endif %}
     </div>
   </div>
 </div>
 
-<div class="card-soft-ghost p-3">
-  <div class="fw-semibold mb-2">รายละเอียดหนี้รายบัญชี</div>
-  {% if not debt_rows %}
-    <div class="text-secondary" style="font-size:13px;">
-      ตอนนี้ไม่มีบัญชีประเภทบัตรเครดิตหรือเงินกู้ที่มียอดหนี้ค้างอยู่
-    </div>
-  {% else %}
-    <div class="table-responsive" style="font-size:12px;">
-      <table class="table table-dark table-sm align-middle mb-0">
+<!-- ตารางหนี้รายบัญชี -->
+<div class="card-soft-ghost p-3 mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="fw-semibold">รายการหนี้ทีละบัญชี</div>
+    <span class="badge-chip">
+      {% if debt_count > 0 %}
+        {{ debt_count }} บัญชีที่เป็นหนี้
+      {% else %}
+        ไม่มีบัญชีที่เป็นหนี้
+      {% endif %}
+    </span>
+  </div>
+
+  {% if debts %}
+    <div class="table-responsive">
+      <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
         <thead>
           <tr class="text-secondary">
             <th>บัญชี</th>
             <th>ประเภท</th>
-            <th class="text-end">ยอดหนี้</th>
-            <th class="text-end">ดอกเบี้ย/ปี</th>
-            <th class="text-end">ดอกเบี้ย/เดือน</th>
-            <th class="text-end">จ่ายขั้นต่ำ</th>
-            <th class="text-end">วงเงิน / Utilization</th>
-            {% if payoff_target_months %}
-              <th class="text-end">แนะนำจ่าย/เดือน ({{ payoff_target_months }} เดือน)</th>
-            {% endif %}
+            <th class="text-end">ยอดหนี้ปัจจุบัน</th>
+            <th class="text-end">ดอกเบี้ย (ต่อปี)</th>
+            <th class="text-end">ยอดชำระขั้นต่ำ</th>
+            <th class="text-end">เดือนโดยประมาณ*</th>
           </tr>
         </thead>
         <tbody>
-          {% for row in debt_rows %}
+          {% for d in debts %}
             <tr>
-              <td>{{ row.account.name }}</td>
-              <td>
-                {% if row.account.account_type == "CREDIT" %}
-                  บัตรเครดิต
-                {% elif row.account.account_type == "LOAN" %}
-                  เงินกู้
-                {% else %}
-                  {{ row.account.account_type }}
-                {% endif %}
+              <td>{{ d.account.name }}</td>
+              <td>{{ d.account.get_account_type_display }}</td>
+              <td class="text-end text-danger">
+                ฿{{ d.debt_amount|floatformat:2 }}
               </td>
-              <td class="text-end text-danger">฿{{ row.debt_amount|floatformat:2 }}</td>
               <td class="text-end">
-                {% if row.interest_rate %}
-                  {{ row.interest_rate|floatformat:2 }}%
+                {% if d.interest_rate %}
+                  {{ d.interest_rate|floatformat:1 }}%
                 {% else %}
                   -
                 {% endif %}
               </td>
               <td class="text-end">
-                {% if row.monthly_interest %}
-                  ฿{{ row.monthly_interest|floatformat:2 }}
+                {% if d.min_payment %}
+                  ฿{{ d.min_payment|floatformat:2 }}
                 {% else %}
                   -
                 {% endif %}
               </td>
               <td class="text-end">
-                {% if row.min_payment %}
-                  ฿{{ row.min_payment|floatformat:2 }}
+                {% if d.months_to_payoff %}
+                  ~{{ d.months_to_payoff }} เดือน
                 {% else %}
                   -
                 {% endif %}
               </td>
-              <td class="text-end">
-                {% if row.credit_limit %}
-                  <div>วงเงิน ฿{{ row.credit_limit|floatformat:0 }}</div>
-                  {% if row.utilization is not None %}
-                    <div class="text-secondary" style="font-size:11px;">
-                      ใช้ไปประมาณ {{ row.utilization|floatformat:0 }}%
-                    </div>
-                  {% endif %}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
-              {% if payoff_target_months %}
-                <td class="text-end">
-                  {% if row.payoff_per_month %}
-                    <div class="fw-semibold text-success">
-                      ฿{{ row.payoff_per_month|floatformat:2 }}
-                    </div>
-                    <div class="text-secondary" style="font-size:11px;">
-                      (ถ้าจ่ายเท่านี้ทุกเดือน หนี้ก้อนนี้จะหมดราว {{ payoff_target_months }} เดือน
-                      โดยยังไม่คิดดอกเบี้ยจริง)
-                    </div>
-                  {% else %}
-                    -
-                  {% endif %}
-                </td>
-              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+    <div class="text-secondary mt-1" style="font-size:11px;">
+      *คำนวณแบบหยาบ ๆ โดยสมมติว่าจ่ายเท่ากับยอดขั้นต่ำตลอด และยังไม่คิดดอกเบี้ยทบซ้อนจริง ๆ
+    </div>
+  {% else %}
+    <div class="text-secondary" style="font-size:13px;">
+      ตอนนี้ยังไม่มีบัญชีที่เป็นหนี้เลย เยี่ยมมากคับ 🎉
+    </div>
   {% endif %}
 </div>
+
+<!-- แผน Snowball vs Avalanche -->
+<div class="row g-3 mb-3">
+  <div class="col-12 col-lg-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="fw-semibold mb-1">Snowball strategy</div>
+      <div class="text-secondary mb-2" style="font-size:12px;">
+        โฟกัสปิดหนี้ยอดเล็กก่อน เพื่อให้รู้สึกว่า “ปลดหนี้ได้เร็ว” แล้ววนไปบัญชีถัดไป
+      </div>
+
+      {% if snowball_plan %}
+        <ol class="mb-0" style="font-size:13px; padding-left:18px;">
+          {% for d in snowball_plan %}
+            <li class="mb-1">
+              <span class="fw-semibold">{{ d.account.name }}</span>
+              – หนี้ ~฿{{ d.debt_amount|floatformat:0 }}
+              {% if d.months_to_payoff %}
+                <span class="text-secondary" style="font-size:11px;">
+                  (ถ้าจ่ายขั้นต่ำ: ~{{ d.months_to_payoff }} เดือน)
+                </span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ไม่มีหนี้ให้จัดแผน Snowball ในตอนนี้
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <div class="card-soft-ghost p-3 h-100">
+      <div class="fw-semibold mb-1">Avalanche strategy</div>
+      <div class="text-secondary mb-2" style="font-size:12px;">
+        โฟกัสบัญชีที่ดอกเบี้ยสูงสุดก่อน ช่วยลดค่าใช้จ่ายดอกเบี้ยในระยะยาว
+      </div>
+
+      {% if avalanche_plan %}
+        <ol class="mb-0" style="font-size:13px; padding-left:18px;">
+          {% for d in avalanche_plan %}
+            <li class="mb-1">
+              <span class="fw-semibold">{{ d.account.name }}</span>
+              – หนี้ ~฿{{ d.debt_amount|floatformat:0 }}
+              {% if d.interest_rate %}
+                <span class="text-secondary" style="font-size:11px;">
+                  (ดอกเบี้ย ~{{ d.interest_rate|floatformat:1 }}% ต่อปี)
+                </span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="text-secondary" style="font-size:13px;">
+          ยังไม่มีข้อมูลดอกเบี้ย หรือไม่มีบัญชีหนี้ให้จัดแผน Avalanche
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ฟอร์มเลือกแผนปลดหนี้ที่ใช้อยู่ -->
+<div class="card-soft-ghost p-3 mb-3">
+  <form method="post"
+        class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+    {% csrf_token %}
+    <div>
+      <div class="fw-semibold mb-1">เลือกแผนปลดหนี้ที่โอ็ตจะใช้จริง</div>
+      <div class="text-secondary" style="font-size:12px;">
+        ระบบจะเอาไปโชว์บน Dashboard ทุกครั้งที่เปิด เพื่อเตือนว่าตอนนี้เราเดินตามแผนไหนอยู่
+      </div>
+    </div>
+    <div class="d-flex flex-column flex-md-row gap-2" style="font-size:13px;">
+      <label class="badge-chip" style="cursor:pointer;">
+        <input type="radio" name="strategy" value="SNOWBALL"
+               {% if plan and plan.strategy == "SNOWBALL" %}checked{% endif %}
+               style="margin-right:6px;">
+        Snowball (ยอดเล็กก่อน)
+      </label>
+      <label class="badge-chip" style="cursor:pointer;">
+        <input type="radio" name="strategy" value="AVALANCHE"
+               {% if plan and plan.strategy == "AVALANCHE" %}checked{% endif %}
+               style="margin-right:6px;">
+        Avalanche (ดอกสูงก่อน)
+      </label>
+      <label class="badge-chip" style="cursor:pointer;">
+        <input type="radio" name="strategy" value="NONE"
+               {% if plan and plan.strategy == "NONE" %}checked{% endif %}
+               style="margin-right:6px;">
+        ยังไม่เลือก
+      </label>
+      <button type="submit" class="btn btn-brand btn-sm">
+        บันทึกแผน
+      </button>
+    </div>
+  </form>
+</div>
+
 {% endblock %}

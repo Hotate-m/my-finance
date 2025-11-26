@@ -1,6 +1,10 @@
 from decimal import Decimal
 from django.db import models
 from django.db.models import Sum
+from django.conf import settings
+from math import ceil
+from django.contrib.auth.models import User
+
 
 class Account(models.Model):
     ACCOUNT_TYPE_CHOICES = [
@@ -49,8 +53,13 @@ class Account(models.Model):
         )['s'] or Decimal('0')
         opening = self.opening_balance or Decimal('0')
         return opening + total_in - total_out
-
-
+    
+    @property
+    def current_balance(self):
+        """ยอดปัจจุบัน = opening_balance + ผลรวม amount ใน Transaction ทั้งหมดของบัญชีนี้"""
+        opening = self.opening_balance or Decimal("0")
+        total_tx = self.transactions.aggregate(s=Sum("amount"))["s"] or Decimal("0")
+        return opening + total_tx
 class Category(models.Model):
 
     KIND_CHOICES = [
@@ -328,4 +337,54 @@ class CategoryBudget(models.Model):
     @property
     def amount_display(self) -> Decimal:
         return self.amount or Decimal("0")
+    
+class DebtPlanSetting(models.Model):
+    STRATEGY_CHOICES = [
+        ("NONE", "ยังไม่เลือกแผนเฉพาะ"),
+        ("SNOWBALL", "Snowball – ปิดยอดเล็กก่อน"),
+        ("AVALANCHE", "Avalanche – ดอกสูงก่อน"),
+    ]
+
+    strategy = models.CharField(
+        max_length=20,
+        choices=STRATEGY_CHOICES,
+        default="NONE",
+    )
+    note = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="โน้ตสั้น ๆ เกี่ยวกับแผนปลดหนี้ (ถ้าอยากเขียนเพิ่ม)",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Debt plan: {self.get_strategy_display()}"
+    
+class DashboardPreference(models.Model):
+    """
+    ตั้งค่าหน้าว่า Dashboard จะแสดงการ์ดอะไรบ้าง (ต่อ User 1 คน = 1 record)
+    """
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="finance_dashboard_pref",
+    )
+
+    show_smart_insights = models.BooleanField(default=True)
+    show_budget_box = models.BooleanField(default=True)
+    show_goals = models.BooleanField(default=True)
+    show_recurring = models.BooleanField(default=True)
+    show_today_summary = models.BooleanField(default=True)
+    show_trend_chart = models.BooleanField(default=True)
+    show_expense_pie = models.BooleanField(default=True)
+    show_estimate_box = models.BooleanField(default=True)
+    show_accounts = models.BooleanField(default=True)
+    show_recent_transactions = models.BooleanField(default=True)
+    show_debt_plan_card = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Dashboard preference for {self.user}"
 

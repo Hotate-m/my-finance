@@ -16,7 +16,7 @@ try:
 except Exception:
     HTML = None
 
-from .models import Account, Transaction, Category, RecurringTransaction, Goal, CategoryBudget, TransactionTemplate, Tag
+from .models import Account, Transaction, Category, RecurringTransaction, DashboardPreference, Goal, CategoryBudget, TransactionTemplate, Tag, DebtPlanSetting
 from .forms import TransactionForm, AccountForm, CategoryForm, RecurringTransactionForm, GoalForm
 
 @login_required
@@ -196,7 +196,7 @@ def dashboard(request):
     total_debt = Decimal("0")
 
     for acc in accounts:
-        bal = acc.current_balance or Decimal("0")
+        bal = acc.current_balance or Decimal("0")   # ใช้ property current_balance
         bal = Decimal(bal)
         if bal >= 0:
             total_assets += bal
@@ -247,7 +247,7 @@ def dashboard(request):
     )["s"] or Decimal("0")
     today_net = today_income - today_expense
 
-    # แปลงเป็นสตริง 0.00 เอาไว้โชว์แน่นอน
+    # ฟังก์ชัน format 0.00
     def fmt(amount):
         a = amount or Decimal("0")
         return f"{a:.2f}"
@@ -290,13 +290,13 @@ def dashboard(request):
         12: "ธ.ค.",
     }
 
-    for y, m in months_back:
-        label = f"{month_names_short.get(m, m)} {str(y)[2:]}"
+    for y2, m2 in months_back:
+        label = f"{month_names_short.get(m2, m2)} {str(y2)[2:]}"
         labels.append(label)
 
         base_qs = Transaction.objects.filter(
-            date__year=y,
-            date__month=m,
+            date__year=y2,
+            date__month=m2,
             is_estimate=False,
         )
         inc = base_qs.filter(direction="IN").aggregate(s=Sum("amount"))["s"] or Decimal("0")
@@ -350,10 +350,10 @@ def dashboard(request):
 
     total_exp_prev = Decimal("0")
     count_prev = 0
-    for y, m in last3_months:
+    for y3, m3 in last3_months:
         prev_qs = Transaction.objects.filter(
-            date__year=y,
-            date__month=m,
+            date__year=y3,
+            date__month=m3,
             is_estimate=False,
             direction="OUT",
         )
@@ -453,6 +453,10 @@ def dashboard(request):
     upcoming_recurring.sort(key=lambda x: x["next_date"])
     upcoming_recurring = upcoming_recurring[:5]
 
+    # ===== ตั้งค่า Dashboard + แผนปลดหนี้ =====
+    dashboard_pref, _ = DashboardPreference.objects.get_or_create(user=request.user)
+    debt_plan = DebtPlanSetting.objects.first()  # อันเดียวใช้ทั้งหน้า
+
     context = {
         "today": today,
 
@@ -462,13 +466,18 @@ def dashboard(request):
         "net_worth": net_worth,
 
         "accounts": accounts,
+
+        # เดือนนี้จริง
         "income_month": income_month,
         "expense_month": expense_month,
         "net_month": net_month,
+
+        # เดือนนี้ประมาณการ
         "est_income": est_income,
         "est_expense": est_expense,
         "est_net": est_net,
 
+        # วันนี้
         "today_income": today_income,
         "today_expense": today_expense,
         "today_net": today_net,
@@ -476,6 +485,7 @@ def dashboard(request):
         "today_expense_str": today_expense_str,
         "today_net_str": today_net_str,
 
+        # รายการล่าสุด
         "recent_tx": recent_tx,
 
         # กราฟเส้น 6 เดือน
@@ -504,7 +514,53 @@ def dashboard(request):
         "goals_preview": goals_preview,
         "upcoming_recurring": upcoming_recurring,
     }
+
+    # ===== แผนปลดหนี้ที่เลือกใช้ (ใช้บนการ์ด “แผนปลดหนี้ที่ใช้อยู่ตอนนี้”) =====
+    debt_plan = DebtPlanSetting.objects.first()
+
+    # ===== ตั้งค่าหน้า Dashboard ของ user คนนี้ =====
+    dash_pref, _ = DashboardPreference.objects.get_or_create(user=request.user)
+
+    context.update({
+        "dash_pref": dash_pref,
+        "debt_plan": debt_plan,
+    })
+
     return render(request, "app_finance/dashboard.html", context)
+
+
+@login_required
+def dashboard_preferences(request):
+    """
+    ตั้งค่าว่าหน้า Dashboard จะแสดงการ์ดไหนบ้าง
+    """
+    pref, _ = DashboardPreference.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        fields = [
+            "show_smart_insights",
+            "show_budget_box",
+            "show_goals",
+            "show_recurring",
+            "show_today_summary",
+            "show_trend_chart",
+            "show_expense_pie",
+            "show_estimate_box",
+            "show_accounts",
+            "show_recent_transactions",
+            "show_debt_plan_card",
+        ]
+
+        for field in fields:
+            setattr(pref, field, field in request.POST)
+
+        pref.save()
+        messages.success(request, "บันทึกการตั้งค่าหน้า Dashboard แล้วคับ")
+        return redirect("app_finance:dashboard")
+
+    return render(request, "app_finance/dashboard_preferences.html", {
+        "pref": pref,
+    })
 
 @login_required
 def tools_home(request):
@@ -556,98 +612,115 @@ def export_full_json(request):
 def debts_overview(request):
     """
     หน้าแผนปลดหนี้:
-    - รวมบัญชีที่เป็น CREDIT / LOAN
-    - แสดงยอดหนี้, ดอกเบี้ยต่อเดือนประมาณการ, ยอดจ่ายขั้นต่ำ, utilization (สำหรับบัตร)
-    - ให้ตั้งเป้าว่าอยากปลดหมดในกี่เดือน เพื่อคำนวณยอดที่ควรจ่ายต่อเดือน
+    - รวมหนี้จากบัญชีประเภท CREDIT / LOAN (ยอดปัจจุบันติดลบ)
+    - จำลองงบจ่ายหนี้ต่อเดือนแบบง่าย ๆ
+    - ให้เลือกแผน Snowball / Avalanche / ยังไม่เลือก แล้วเอาไปโชว์บน Dashboard
     """
+
     today = timezone.now().date()
 
-    # ดึงเป้าจ่ายหมดในกี่เดือนจาก query string (?months=24)
-    months_input = (request.GET.get("months") or "").strip()
-    payoff_target_months = None
-    if months_input.isdigit():
-        m = int(months_input)
-        if m > 0:
-            payoff_target_months = m
-
-    debt_accounts = Account.objects.filter(
-        is_active=True,
-        account_type__in=["CREDIT", "LOAN"],
+    # ===== ดึงบัญชีหนี้ =====
+    base_qs = (
+        Account.objects
+        .filter(
+            is_active=True,
+            account_type__in=["CREDIT", "LOAN"],
+        )
+        .order_by("name")
     )
 
-    debt_rows = []
+    debts = []
     total_debt = Decimal("0")
-    total_min_payment = Decimal("0")
-    total_monthly_interest = Decimal("0")
 
-    for acc in debt_accounts:
-        bal = acc.current_balance or Decimal("0")
-
-        # สมมติ: สำหรับบัตรเครดิต มักจะเก็บเป็นยอดติดลบ = หนี้
-        if bal < 0:
-            debt_amount = abs(bal)
+    for acc in base_qs:
+        # ถ้ามี current_balance ให้ใช้เลย, ถ้าไม่มีก็คำนวณจาก opening + tx
+        if hasattr(acc, "current_balance"):
+            bal = acc.current_balance or Decimal("0")
         else:
-            # ถ้าเป็น LOAN อาจเก็บเป็นยอดบวก = หนี้ที่เหลือ
-            if acc.account_type == "LOAN":
-                debt_amount = bal
-            else:
-                debt_amount = Decimal("0")
+            opening = acc.opening_balance or Decimal("0")
+            total_tx = acc.transactions.aggregate(s=Sum("amount"))["s"] or Decimal("0")
+            bal = opening + total_tx
 
-        if debt_amount <= 0:
-            # ข้ามบัญชีที่ไม่เหลือหนี้แล้ว
-            continue
+        if bal >= 0:
+            continue  # ไม่ใช่หนี้
 
+        debt_amount = abs(Decimal(bal))
         total_debt += debt_amount
 
-        # ดอกเบี้ยต่อเดือนประมาณการ
-        interest_rate = acc.interest_rate or Decimal("0")  # % ต่อปี
-        monthly_interest = Decimal("0")
-        if interest_rate > 0:
-            monthly_rate = (interest_rate / Decimal("100")) / Decimal("12")
-            monthly_interest = debt_amount * monthly_rate
+        interest_rate = acc.interest_rate or Decimal("0")         # % ต่อปี
+        min_percent = acc.min_payment_percent or Decimal("0")     # % ของยอดหนี้
 
-        total_monthly_interest += monthly_interest
-
-        # ยอดจ่ายขั้นต่ำ
         min_payment = None
-        min_percent = acc.min_payment_percent or Decimal("0")
         if min_percent > 0:
-            min_payment = debt_amount * (min_percent / Decimal("100"))
-            total_min_payment += min_payment
+            min_payment = (debt_amount * min_percent / Decimal("100")).quantize(
+                Decimal("0.01")
+            )
 
-        # utilization สำหรับบัตรเครดิต
-        credit_limit = acc.credit_limit or None
-        utilization = None
-        if acc.account_type == "CREDIT" and credit_limit and credit_limit > 0:
-            utilization = float(debt_amount / credit_limit * 100)
+        months_to_payoff = None
+        if min_payment and min_payment > 0:
+            months_to_payoff = ceil(float(debt_amount / min_payment))
 
-        # ถ้าอยากปลดหนี้ภายใน X เดือน ควรจ่ายต่อเดือนเท่าไหร่ (ไม่คิดดอกเบี้ย)
-        payoff_per_month = None
-        if payoff_target_months:
-            payoff_per_month = debt_amount / Decimal(payoff_target_months)
-
-        debt_rows.append({
+        debts.append({
             "account": acc,
             "debt_amount": debt_amount,
-            "monthly_interest": monthly_interest,
             "interest_rate": interest_rate,
+            "min_percent": min_percent,
             "min_payment": min_payment,
-            "credit_limit": credit_limit,
-            "utilization": utilization,
-            "payoff_per_month": payoff_per_month,
+            "months_to_payoff": months_to_payoff,
         })
 
-    # sort ให้บัญชีที่หนี้เยอะสุดขึ้นก่อน
-    debt_rows.sort(key=lambda r: r["debt_amount"], reverse=True)
+    # แผน Snowball / Avalanche
+    snowball_plan = sorted(
+        debts,
+        key=lambda x: x["debt_amount"]
+    )
+    avalanche_plan = sorted(
+        debts,
+        key=lambda x: x["interest_rate"],
+        reverse=True,
+    )
+
+    # ===== Simulator: งบจ่ายหนี้ต่อเดือน =====
+    monthly_budget_raw = (request.GET.get("monthly_budget") or "").replace(",", "").strip()
+    monthly_budget = None
+    sim_months = None
+
+    if monthly_budget_raw:
+        try:
+            monthly_budget = Decimal(monthly_budget_raw)
+            if monthly_budget > 0 and total_debt > 0:
+                sim_months = ceil(float(total_debt / monthly_budget))
+        except Exception:
+            monthly_budget = None
+            sim_months = None
+
+    # ===== แผนปลดหนี้ที่เลือกใช้ (DebtPlanSetting – singleton) =====
+    plan, _ = DebtPlanSetting.objects.get_or_create(pk=1)
+
+    if request.method == "POST":
+        strategy = (request.POST.get("strategy") or "NONE").upper()
+        allowed = dict(DebtPlanSetting.STRATEGY_CHOICES).keys()
+        if strategy not in allowed:
+            strategy = "NONE"
+
+        plan.strategy = strategy
+        plan.save()
+        messages.success(request, "บันทึกแผนปลดหนี้ที่ใช้อยู่เรียบร้อยแล้วคับ")
+        return redirect("app_finance:debts_overview")
 
     context = {
         "today": today,
-        "months_input": months_input,
-        "payoff_target_months": payoff_target_months,
-        "debt_rows": debt_rows,
+        "debts": debts,
         "total_debt": total_debt,
-        "total_min_payment": total_min_payment,
-        "total_monthly_interest": total_monthly_interest,
+        "debt_count": len(debts),
+        "snowball_plan": snowball_plan,
+        "avalanche_plan": avalanche_plan,
+
+        "monthly_budget_raw": monthly_budget_raw,
+        "monthly_budget": monthly_budget,
+        "sim_months": sim_months,
+
+        "plan": plan,
     }
     return render(request, "app_finance/debts_overview.html", context)
 
@@ -760,6 +833,28 @@ def accounts_manage(request):
     return render(request, "app_finance/accounts.html", {
         "form": form,
         "accounts": accounts,
+    })
+
+@login_required
+def account_edit(request, pk):
+    """
+    แก้ไขบัญชีที่มีอยู่ (ชื่อ, ประเภท, ดอกเบี้ย, % ขั้นต่ำ ฯลฯ)
+    """
+    account = get_object_or_404(Account, pk=pk)
+
+    if request.method == "POST":
+        form = AccountForm(request.POST, instance=account)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "อัปเดตข้อมูลบัญชีเรียบร้อยแล้ว")
+            return redirect("app_finance:accounts_manage")
+    else:
+        form = AccountForm(instance=account)
+
+    return render(request, "app_finance/account_form.html", {
+        "form": form,
+        "account": account,
+        "edit_mode": True,
     })
 
 @login_required

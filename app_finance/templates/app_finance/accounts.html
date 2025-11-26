@@ -49,7 +49,7 @@
     </div>
   </div>
 
-  <!-- ตารางบัญชี -->
+  <!-- รายการบัญชี -->
   <div class="col-12 col-lg-7">
     <div class="card-soft p-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -58,47 +58,99 @@
       </div>
 
       {% if accounts %}
-        <div class="table-responsive">
-          <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
-            <thead>
-              <tr class="text-secondary">
-                <th>ชื่อ</th>
-                <th>ประเภท</th>
-                <th class="text-end">ยอดตั้งต้น</th>
-                <th class="text-end">ยอดปัจจุบัน</th>
-                <th class="text-end">วงเงิน</th>
-                <th>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for acc in accounts %}
-                <tr>
-                  <td>{{ acc.name }}</td>
-                  <td>{{ acc.get_account_type_display }}</td>
-                  <td class="text-end">
-                    ฿{{ acc.opening_balance|floatformat:2 }}
-                  </td>
-                  <td class="text-end {% if acc.current_balance < 0 %}text-danger{% else %}text-success{% endif %}">
-                    ฿{{ acc.current_balance|floatformat:2 }}
-                  </td>
-                  <td class="text-end">
-                    {% if acc.credit_limit %}
-                      ฿{{ acc.credit_limit|floatformat:2 }}
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if acc.is_active %}
-                      <span class="badge-chip bg-success-subtle text-success">ใช้งาน</span>
-                    {% else %}
-                      <span class="badge-chip bg-secondary">ปิดใช้งาน</span>
-                    {% endif %}
-                  </td>
+        {# ===== Desktop / Tablet: แสดงแบบตาราง ===== #}
+        <div class="d-none d-md-block">
+          <div class="table-responsive">
+            <table class="table table-dark table-sm align-middle mb-0" style="font-size:13px;">
+              <thead>
+                <tr class="text-secondary">
+                  <th>ชื่อ</th>
+                  <th>ประเภท</th>
+                  <th class="text-end">ยอดตั้งต้น</th>
+                  <th class="text-end">ยอดปัจจุบัน</th>
+                  <th class="text-end">วงเงิน</th>
+                  <th>สถานะ</th>
                 </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for acc in accounts %}
+                  <tr>
+                    <td>
+                      <a href="{% url 'app_finance:account_edit' acc.id %}"
+                         style="color:inherit; text-decoration:underline dotted; text-underline-offset: 2px;">
+                        {{ acc.name }}
+                      </a>
+                    </td>
+                    <td>{{ acc.get_account_type_display }}</td>
+                    <td class="text-end">
+                      ฿{{ acc.opening_balance|floatformat:2 }}
+                    </td>
+                    <td class="text-end {% if acc.current_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                      ฿{{ acc.current_balance|floatformat:2 }}
+                    </td>
+                    <td class="text-end">
+                      {% if acc.credit_limit %}
+                        ฿{{ acc.credit_limit|floatformat:2 }}
+                      {% else %}
+                        -
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if acc.is_active %}
+                        <span class="badge-chip bg-success-subtle text-success">ใช้งาน</span>
+                      {% else %}
+                        <span class="badge-chip bg-secondary">ปิดใช้งาน</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {# ===== Mobile: แสดงเป็นการ์ด อ่านง่าย กดทั้งแถวเพื่อแก้ไขได้ ===== #}
+        <div class="d-block d-md-none">
+          <div class="d-flex flex-column gap-2">
+            {% for acc in accounts %}
+              <a href="{% url 'app_finance:account_edit' acc.id %}"
+                 class="card-soft-ghost p-2"
+                 style="display:block; color:inherit;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div>
+                    <div class="fw-semibold" style="font-size:13px;">
+                      {{ acc.name }}
+                    </div>
+                    <div class="text-secondary" style="font-size:11px;">
+                      {{ acc.get_account_type_display }}
+                    </div>
+                  </div>
+                  <div class="text-end" style="font-size:12px;">
+                    <div class="{% if acc.current_balance < 0 %}text-danger{% else %}text-success{% endif %}">
+                      ฿{{ acc.current_balance|floatformat:2 }}
+                    </div>
+                    {% if acc.credit_limit %}
+                      <div class="text-secondary" style="font-size:10px;">
+                        วงเงิน ฿{{ acc.credit_limit|floatformat:0 }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center" style="font-size:10px;">
+                  <div class="text-secondary">
+                    เปิดต้นทาง ฿{{ acc.opening_balance|floatformat:0 }}
+                  </div>
+                  <div>
+                    {% if acc.is_active %}
+                      <span class="badge-chip" style="font-size:10px;">ใช้งาน</span>
+                    {% else %}
+                      <span class="badge-chip" style="font-size:10px;">ปิดใช้งาน</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </a>
+            {% endfor %}
+          </div>
         </div>
       {% else %}
         <div class="text-secondary" style="font-size:13px;">

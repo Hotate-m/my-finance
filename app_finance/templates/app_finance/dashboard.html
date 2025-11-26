@@ -10,15 +10,7 @@
       ข้อมูลของวันที่ {{ today|date:"j F Y" }}
     </div>
   </div>
-  <div class="d-flex flex-wrap gap-2">
-    <!-- ปุ่ม Quick Add -->
-    <button type="button"
-            class="btn btn-brand btn-sm"
-            data-bs-toggle="modal"
-            data-bs-target="#quickAddModal">
-      ⚡
-    </button>
-
+  <div class="d-flex flex-wrap gap-2 align-items-center">
     <a href="{% url 'app_finance:transaction_create' %}?type=IN" class="btn btn-brand btn-sm">
       + รายรับ
     </a>
@@ -27,6 +19,13 @@
     </a>
     <a href="{% url 'app_finance:transactions_list' %}" class="btn btn-ghost btn-sm">
       ดูรายการทั้งหมด
+    </a>
+
+    <!-- ปุ่มเฟืองจัดการ Dashboard -->
+    <a href="{% url 'app_finance:dashboard_preferences' %}"
+       class="btn btn-ghost btn-sm"
+       title="ตั้งค่าหน้า Dashboard">
+      ⚙️
     </a>
   </div>
 </div>
@@ -73,6 +72,7 @@
   </div>
 </div>
 
+{% if not dash_pref or dash_pref.show_smart_insights %}
 <!-- Smart Insight -->
 <div class="card-soft-ghost p-3 mb-4">
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -131,7 +131,9 @@
     </div>
   </div>
 </div>
+{% endif %}
 
+{% if not dash_pref or dash_pref.show_budget_box %}
 <!-- สัญญาณจากงบประมาณเดือนนี้ -->
 <div class="card-soft-ghost p-3 mb-4">
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -211,9 +213,11 @@
     {% endif %}
   {% endif %}
 </div>
+{% endif %}
 
 <!-- เป้าหมาย + รายการประจำที่จะถึง -->
 <div class="row g-3 mb-4">
+  {% if not dash_pref or dash_pref.show_goals %}
   <div class="col-12 col-lg-6">
     <div class="card-soft-ghost p-3 h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -277,7 +281,9 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 
+  {% if not dash_pref or dash_pref.show_recurring %}
   <div class="col-12 col-lg-6">
     <div class="card-soft-ghost p-3 h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -326,8 +332,10 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 </div>
 
+{% if not dash_pref or dash_pref.show_today_summary %}
 <!-- การ์ดสรุปวันนี้ -->
 <div class="card-soft-ghost p-3 mb-4">
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -383,8 +391,9 @@
     </div>
   </div>
 </div>
+{% endif %}
 
-
+{% if not dash_pref or dash_pref.show_trend_chart %}
 <!-- กราฟแนวโน้ม 6 เดือนล่าสุด -->
 <div class="card-soft-ghost p-3 mb-4">
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -400,7 +409,9 @@
     <canvas id="incomeExpenseChart"></canvas>
   </div>
 </div>
+{% endif %}
 
+{% if not dash_pref or dash_pref.show_expense_pie %}
 <!-- กราฟวงกลม รายจ่ายตามหมวด -->
 <div class="card-soft-ghost p-3 mb-4">
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -431,7 +442,9 @@
     </div>
   </div>
 </div>
+{% endif %}
 
+{% if not dash_pref or dash_pref.show_estimate_box %}
 <!-- ประมาณการ -->
 <div class="card-soft-ghost p-3 mb-4">
   <div class="d-flex justify-content-between align-items-center mb-2">
@@ -458,9 +471,55 @@
     </div>
   </div>
 </div>
+{% endif %}
+
+{% if not dash_pref or dash_pref.show_debt_plan_card %}
+<!-- แผนปลดหนี้ที่ใช้อยู่ -->
+<div class="card-soft-ghost p-3 mb-4">
+  <div class="d-flex justify-content-between align-items-center mb-1">
+    <div>
+      <div class="fw-semibold">แผนปลดหนี้ที่ใช้อยู่ตอนนี้</div>
+      <div class="text-secondary" style="font-size:12px;">
+        ตั้งค่าได้ในหน้า “แผนปลดหนี้” แล้วจะโชว์ตรงนี้ทุกครั้งที่เปิด Dashboard
+      </div>
+    </div>
+    <a href="{% url 'app_finance:debts_overview' %}" class="badge-chip">
+      ไปหน้าแผนปลดหนี้
+    </a>
+  </div>
+
+  {% if debt_plan %}
+    {% if debt_plan.strategy == "SNOWBALL" %}
+      <div style="font-size:13px;">
+        <span class="fw-semibold">Snowball – ปิดหนี้ยอดเล็กก่อน</span><br>
+        <span class="text-secondary" style="font-size:12px;">
+          โฟกัสเคลียร์บัญชีเล็ก ๆ ให้ปิดให้หมดทีละก้อน จะรู้สึกคืบหน้าบ่อย มีกำลังใจปลดหนี้ยาว ๆ
+        </span>
+      </div>
+    {% elif debt_plan.strategy == "AVALANCHE" %}
+      <div style="font-size:13px;">
+        <span class="fw-semibold">Avalanche – ดอกเบี้ยสูงก่อน</span><br>
+        <span class="text-secondary" style="font-size:12px;">
+          จัดหนักบัญชีที่ดอกเบี้ยสูงสุดก่อน ลดดอกเบี้ยรวมในระยะยาว ประหยัดเงินสุด แต่ต้องใจนิ่งหน่อย
+        </span>
+      </div>
+    {% else %}
+      <div class="text-secondary" style="font-size:13px;">
+        ตอนนี้ยังไม่ได้เลือกใช้แผนเฉพาะ ลองไปเลือก Snowball หรือ Avalanche ในหน้า “แผนปลดหนี้” ดูคับ
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="text-secondary" style="font-size:13px;">
+      ยังไม่มีข้อมูลแผนปลดหนี้ ลองไปตั้งค่าในหน้า “แผนปลดหนี้” ก่อนนะคับ
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
 
 <div class="row g-4">
   <!-- บัญชี -->
+  {% if not dash_pref or dash_pref.show_accounts %}
   <div class="col-12 col-lg-5">
     <div class="card-soft-ghost p-3 h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -496,7 +555,9 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 
+  {% if not dash_pref or dash_pref.show_recent_transactions %}
   <!-- รายการล่าสุด -->
   <div class="col-12 col-lg-7">
     <div class="card-soft-ghost p-3 h-100">
@@ -561,6 +622,7 @@
       {% endif %}
     </div>
   </div>
+  {% endif %}
 </div>
 
 <!-- Quick Add Transaction Modal -->
@@ -754,36 +816,121 @@
 
       // ===== กราฟวงกลม รายจ่ายตามหมวด =====
       const pieCanvas = document.getElementById('expenseByCategoryChart');
-      if (pieCanvas) {
-        const catLabels = {{ cat_labels|safe }};
-        const catValues = {{ cat_values|safe }};
+        if (pieCanvas) {
+          const catLabels = {{ cat_labels|safe }};
+          const catValues = {{ cat_values|safe }};
 
-        if (catLabels.length > 0 && catValues.length > 0) {
-          new Chart(pieCanvas, {
-            type: 'doughnut',
-            data: {
-              labels: catLabels,
-              datasets: [{
-                data: catValues,
-                borderWidth: 1,
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    color: '#e5e7eb',
-                    font: { size: 11 }
+          if (catLabels.length > 0 && catValues.length > 0) {
+            const totalExpense = catValues.reduce((sum, v) => sum + v, 0);
+
+            // โทนสีแบบพาสเทลเข้ม ๆ เข้ากับธีมมืด/สว่าง
+            const colors = [
+              'rgba(45,212,191,0.9)',  // teal
+              'rgba(56,189,248,0.9)',  // sky
+              'rgba(251,146,60,0.9)',  // orange
+              'rgba(244,114,182,0.9)', // pink
+              'rgba(129,140,248,0.9)', // indigo
+              'rgba(190,242,100,0.9)', // lime
+              'rgba(248,250,252,0.9)', // soft
+              'rgba(248,113,113,0.9)', // red
+            ];
+
+            const bgColors = catValues.map((_, idx) => colors[idx % colors.length]);
+
+            const centerTextPlugin = {
+              id: 'centerText',
+              afterDraw(chart, args, options) {
+                const { ctx, chartArea: { left, right, top, bottom } } = chart;
+                const x = (left + right) / 2;
+                const y = (top + bottom) / 2;
+
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // ตัวเลขรวม
+                ctx.fillStyle = '#e5e7eb';
+                ctx.font = '600 15px "Prompt", system-ui';
+                const formatted = totalExpense.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                });
+                ctx.fillText(`฿${formatted}`, x, y - 6);
+
+                // label ด้านล่าง
+                ctx.fillStyle = '#9ca3af';
+                ctx.font = '400 11px "Prompt", system-ui';
+                ctx.fillText('รวมรายจ่ายเดือนนี้', x, y + 10);
+
+                ctx.restore();
+              }
+            };
+
+            new Chart(pieCanvas, {
+              type: 'doughnut',
+              data: {
+                labels: catLabels,
+                datasets: [{
+                  data: catValues,
+                  backgroundColor: bgColors,
+                  borderColor: '#020617',
+                  borderWidth: 2,
+                  hoverOffset: 6,
+                  spacing: 2,
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',   // ให้เป็นโดนัทสวย ๆ
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      color: '#e5e7eb',
+                      font: { size: 11 },
+                      // ตัด label ยาวเกิน
+                      generateLabels(chart) {
+                        const original = Chart.overrides.doughnut.plugins.legend.labels.generateLabels(chart);
+                        return original.map(item => {
+                          const maxLen = 18;
+                          if (item.text.length > maxLen) {
+                            item.text = item.text.slice(0, maxLen) + '…';
+                          }
+                          return item;
+                        });
+                      }
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: 'rgba(15,23,42,0.95)',
+                    borderColor: 'rgba(148,163,184,0.7)',
+                    borderWidth: 1,
+                    padding: 8,
+                    titleFont: { size: 12, family: 'Prompt' },
+                    bodyFont: { size: 11, family: 'Prompt' },
+                    callbacks: {
+                      label(context) {
+                        const label = context.label || '';
+                        const value = context.parsed || 0;
+                        const percent = totalExpense
+                          ? (value / totalExpense * 100).toFixed(1)
+                          : 0;
+
+                        const valueStr = value.toLocaleString(undefined, {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
+                        });
+                        return `${label}: ฿${valueStr} (${percent}%)`;
+                      }
+                    }
                   }
                 }
-              }
-            }
-          });
+              },
+              plugins: [centerTextPlugin],
+            });
+          }
         }
-      }
 
       // ===== Quick Add Template Autofill =====
       (function(){

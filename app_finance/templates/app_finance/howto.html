@@ -1,125 +1,92 @@
 {% extends "app_finance/base.html" %}
 
-{% block title %}วิธีใช้งานระบบเงินของโอ็ต{% endblock %}
+{% block title %}คู่มือใช้งาน OAT FINANCE{% endblock %}
 
 {% block content %}
 <div class="mb-3">
   <h1 class="h3 mb-1">วิธีใช้งาน OAT FINANCE</h1>
   <div class="text-secondary" style="font-size:13px;">
-    คู่มือสั้น ๆ เอาไว้เตือนตัวเองว่าระบบนี้ใช้ยังไงให้ชีวิตการเงินโอ็ตง่ายขึ้น
+    คู่มือแบบสั้น ๆ สำหรับโอ็ต และคนที่โอ็ตให้มาลองใช้ระบบนี้
   </div>
 </div>
 
 <div class="card-soft p-3 mb-3">
-  <div class="fw-semibold mb-1">ภาพรวมระบบ</div>
-  <div class="text-secondary" style="font-size:13px;">
-    ระบบนี้แบ่งออกเป็น 3 ส่วนหลัก ๆ:
-    <ul class="mt-2 mb-1">
-      <li><strong>บันทึกความจริง</strong> – บัญชี, รายรับรายจ่าย, รายการประจำ</li>
-      <li><strong>วางแผนอนาคต</strong> – เป้าหมาย (Goals), งบประมาณ (Budgets), ประมาณการ</li>
-      <li><strong>อ่านค่า / เช็คสุขภาพ</strong> – Dashboard, ปฏิทินเงิน, แผนปลดหนี้, รายงานรายเดือน (PDF)</li>
-    </ul>
-    แนะนำให้ทำตาม Step ด้านล่างนี้ก่อน แล้วค่อยใช้ Dashboard เป็นหน้าหลักในแต่ละวัน
-  </div>
+  <h2 class="h6 mb-2">1. ภาพรวมระบบ</h2>
+  <p class="mb-1" style="font-size:13px;">
+    ระบบนี้ช่วยโอ็ตเก็บข้อมูลเงินเข้า–ออก, สรุปรายเดือน, ตามเป้าหมาย, งบประมาณ และแผนปลดหนี้
+  </p>
+  <ul style="font-size:13px;">
+    <li><strong>Dashboard</strong> – ภาพรวมวันนี้ เดือนนี้ กราฟ และ insight ต่าง ๆ</li>
+    <li><strong>รายการทั้งหมด</strong> – ดูและค้นประวัติรายรับ–รายจ่าย (พร้อมหลักฐาน)</li>
+    <li><strong>เป้าหมาย</strong> – หัวข้อที่โอ็ตอยากเก็บเงิน/จ่ายให้สำเร็จ เช่น ปลดหนี้, ลงทุน, ท่องเที่ยว</li>
+    <li><strong>งบประมาณ</strong> – ตั้งวงเงินรายจ่ายรายหมวด เช่น อาหาร, เดินทาง, ไลฟ์สไตล์</li>
+    <li><strong>แผนปลดหนี้</strong> – รวมทุกหนี้จากบัตรเครดิต / เงินกู้ และวางแผนปิด</li>
+  </ul>
 </div>
 
-<div class="row g-3">
-  <!-- Step วันแรกที่เริ่มใช้ -->
-  <div class="col-12 col-lg-6">
-    <div class="card-soft-ghost p-3 h-100">
-      <div class="pill-label mb-1">วันแรกที่เริ่มใช้</div>
-      <div class="fw-semibold mb-2">1) สร้างภาพรวมทั้งหมดก่อน</div>
-      <div class="text-secondary" style="font-size:13px;">
-        <ol class="mt-1 mb-2">
-          <li>ไปที่เมนู <strong>ตั้งค่า → บัญชี</strong> ใส่ทุกที่ที่มีเงิน/หนี้
-            (เงินสด, บัญชีธนาคาร, บัตรเครดิต, สินเชื่อ ฯลฯ)</li>
-          <li>ไปที่ <strong>ตั้งค่า → หมวดหมู่</strong> สร้างหมวดที่ใช้จริงในชีวิต</li>
-          <li>เริ่มบันทึกรายการย้อนหลังได้ที่ <strong>รายการ → รายการทั้งหมด</strong>
-            หรือกดปุ่ม <strong>+ เพิ่มรายรับ / รายจ่าย</strong> ที่ด้านบน/ล่างจอ</li>
-        </ol>
-        ทำครบ 3 ข้อนี้ Dashboard จะเริ่มแสดง Net worth และกราฟต่าง ๆ ให้แล้ว
-      </div>
-    </div>
-  </div>
-
-  <!-- Step วางแผน -->
-  <div class="col-12 col-lg-6">
-    <div class="card-soft-ghost p-3 h-100">
-      <div class="pill-label mb-1">หลังจากมีข้อมูลแล้ว</div>
-      <div class="fw-semibold mb-2">2) วางแผนให้ชีวิตเงินนิ่งขึ้น</div>
-      <div class="text-secondary" style="font-size:13px;">
-        <ul class="mt-1 mb-2">
-          <li><strong>เป้าหมาย (Goals)</strong> – เมนู <strong>ตั้งค่า → เป้าหมาย</strong><br>
-              เช่น เก็บเงิน 50,000 ภายใน 6 เดือน, ปิดหนี้บัตรใบนี้ก่อนสิ้นปี</li>
-          <li><strong>งบประมาณ (Budgets)</strong> – เมนู <strong>ตั้งค่า → งบประมาณ</strong><br>
-              ตั้งวงเงินต่อหมวด แล้วดู % ใช้ไปใน Dashboard / รายงานรายเดือน</li>
-          <li><strong>รายการประจำ (Recurring)</strong> – เมนู <strong>รายการ → รายการประจำ</strong><br>
-              ใส่ค่าห้อง, ค่าเน็ต, ผ่อนรถ ฯลฯ แล้วใช้ปุ่ม
-              <em>“ลง recurring เดือนนี้”</em> ให้ระบบสร้างรายการเดือนนั้นให้อัตโนมัติ</li>
-        </ul>
-      </div>
-    </div>
-  </div>
+<div class="card-soft p-3 mb-3">
+  <h2 class="h6 mb-2">2. ขั้นตอนเริ่มต้นใช้งาน</h2>
+  <ol style="font-size:13px; padding-left:18px;">
+    <li>ไปที่เมนู <strong>บัญชี</strong> แล้วสร้างบัญชีที่ใช้จริง เช่น “KBank เงินเดือน”, “บัตรเครดิต A”</li>
+    <li>ถ้ามียอดหนี้เดิม ให้ใส่เป็น <strong>ยอดตั้งต้นติดลบ</strong> เช่น -300000</li>
+    <li>เริ่มบันทึก <strong>รายการเงินเข้า–ออก</strong> ในแต่ละวัน</li>
+    <li>ตั้ง <strong>เป้าหมาย</strong> และ <strong>งบประมาณรายจ่าย</strong> เพื่อช่วยควบคุม</li>
+    <li>เปิดหน้า <strong>แผนปลดหนี้</strong> เพื่อดูภาพรวมและเลือกแผน Snowball/Avalanche</li>
+  </ol>
 </div>
 
-<div class="row g-3 mt-3">
-  <!-- Routine วันต่อวัน -->
-  <div class="col-12 col-lg-4">
-    <div class="card-soft-ghost p-3 h-100">
-      <div class="pill-label mb-1">ใช้จริงในแต่ละวัน</div>
-      <div class="fw-semibold mb-2">3) Daily routine (วันหนึ่งไม่เกิน 3 นาที)</div>
-      <div class="text-secondary" style="font-size:13px;">
-        <ul class="mt-1 mb-2">
-          <li>เปิดหน้า <strong>Dashboard</strong> ดูสรุปวันนี้</li>
-          <li>กด <strong>+ รายรับ</strong> / <strong>+ รายจ่าย</strong>
-              บันทึกเงินเข้า–ออกของวันนั้น</li>
-          <li>ถ้ามีค่าใช้จ่ายล่วงหน้าที่รู้แน่ ๆ ให้ติ๊ก “ประมาณการ” ไว้ก่อน</li>
-        </ul>
-        แค่นี้ข้อมูลจะสะสมไปเรื่อย ๆ แบบไม่รู้สึกเหนื่อยเกินไป
-      </div>
-    </div>
-  </div>
-
-  <!-- Routine รายสัปดาห์ -->
-  <div class="col-12 col-lg-4">
-    <div class="card-soft-ghost p-3 h-100">
-      <div class="pill-label mb-1">สัปดาห์ละครั้ง</div>
-      <div class="fw-semibold mb-2">4) Weekly review</div>
-      <div class="text-secondary" style="font-size:13px;">
-        <ul class="mt-1 mb-2">
-          <li>เปิด <strong>ปฏิทินเงิน</strong> ดูว่าอาทิตย์หน้ามีอะไรเข้า–ออกบ้าง</li>
-          <li>เช็ค <strong>Dashboard → งบประมาณ</strong> ว่ามีหมวดไหนใกล้เต็มงบแล้ว</li>
-          <li>ถ้ามี recurring ใหม่ (เช่น สมัครบริการเพิ่ม) ให้ไปเพิ่มในเมนูรายการประจำ</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-
-  <!-- Routine รายเดือน -->
-  <div class="col-12 col-lg-4">
-    <div class="card-soft-ghost p-3 h-100">
-      <div class="pill-label mb-1">ปลายเดือน / ต้นเดือน</div>
-      <div class="fw-semibold mb-2">5) Monthly review</div>
-      <div class="text-secondary" style="font-size:13px;">
-        <ul class="mt-1 mb-2">
-          <li>เปิด <strong>รายงานรายเดือน (PDF)</strong> ดูสรุปทั้งเดือน</li>
-          <li>อัปเดต <strong>งบประมาณเดือนถัดไป</strong> ถ้ารู้สึกว่าหมวดไหนควรเพิ่ม/ลด</li>
-          <li>อัปเดต <strong>เป้าหมาย / แผนปลดหนี้</strong> ว่าไปถึงไหนแล้ว</li>
-        </ul>
-        สามารถ Export PDF / CSV เก็บไว้ หรือส่งให้คนสนิทดูร่วมกันได้
-      </div>
-    </div>
-  </div>
+<div class="card-soft p-3 mb-3">
+  <h2 class="h6 mb-2">3. วิธีใช้หน้า “แผนปลดหนี้”</h2>
+  <p class="mb-2" style="font-size:13px;">
+    หน้า <strong>แผนปลดหนี้</strong> จะรวมหนี้จากบัญชีประเภท “บัตรเครดิต” และ “เงินกู้”
+    ที่ยอดปัจจุบันติดลบ แล้วคำนวณหนี้รวมให้โอ็ตเห็นในคราวเดียว
+  </p>
+  <ol style="font-size:13px; padding-left:18px;">
+    <li>ตรวจดูว่าแต่ละบัญชีมีหนี้ประมาณเท่าไหร่ และยอดขั้นต่ำต่อเดือนเป็นเท่าไหร่</li>
+    <li>ลองกรอกช่อง <strong>“งบจ่ายหนี้ต่อเดือน”</strong> เช่น 5,000 / 10,000 บาท</li>
+    <li>ระบบจะประมาณว่า
+      <em>“ถ้าจ่ายเท่านี้ทุกเดือน หนี้รวมจะหมดประมาณกี่เดือน”</em>
+      (ยังไม่คิดดอกเบี้ยจริง เป็นแนวทางคร่าว ๆ)</li>
+    <li>ดู 2 ลิสต์ด้านล่าง: <strong>Snowball strategy</strong> กับ <strong>Avalanche strategy</strong></li>
+  </ol>
 </div>
 
-<div class="card-soft-ghost p-3 mt-3">
-  <div class="fw-semibold mb-1">Tips เล็ก ๆ สำหรับโอ็ต</div>
-  <div class="text-secondary" style="font-size:13px;">
-    <ul class="mt-1 mb-1">
-      <li>ไม่ต้องกรอกย้อนหลังทุกบาททุกสตางค์ เอาแค่รายการที่ “มีผลต่อภาพรวม” ก็พอ</li>
-      <li>ถ้าวันไหนขี้เกียจกด ให้จดสั้น ๆ ใน Note มือถือ แล้วค่อยมากรอกทีเดียวก็ได้</li>
-      <li>ถ้าเริ่มรู้สึกว่าเมนูเยอะเกิน ให้ใช้ Dashboard เป็นหน้าหลัก แล้วกดลิงก์จากตรงนั้นเป็นหลัก</li>
-    </ul>
-  </div>
+<div class="card-soft p-3 mb-3">
+  <h2 class="h6 mb-2">4. Snowball vs Avalanche ใช้ยังไง?</h2>
+
+  <h3 class="h6 mt-2">4.1 แผน Snowball – ปิดยอดเล็กก่อน</h3>
+  <p style="font-size:13px;">
+    เหมาะเวลาโอ็ตอยากได้ “กำลังใจ” และเห็นความคืบหน้าเร็ว ๆ
+  </p>
+  <ul style="font-size:13px;">
+    <li>เรียงหนี้จากยอดเล็ก &rarr; ใหญ่</li>
+    <li>จ่ายขั้นต่ำทุกก้อน แล้วเอาเงินที่เหลือ <strong>อัดเพิ่มในหนี้ยอดเล็กสุด</strong></li>
+    <li>พอปิดก้อนเล็กได้ ก็นำเงินที่เคยจ่ายก้อนนั้น ไปเพิ่มในก้อนถัดไปวนไป</li>
+  </ul>
+
+  <h3 class="h6 mt-3">4.2 แผน Avalanche – ดอกเบี้ยสูงก่อน</h3>
+  <p style="font-size:13px;">
+    เหมาะถ้าโอ็ตอยาก <strong>ประหยัดดอกเบี้ยรวมที่สุด</strong> ในระยะยาว
+  </p>
+  <ul style="font-size:13px;">
+    <li>เรียงหนี้จาก <strong>ดอกเบี้ยสูง &rarr; ต่ำ</strong></li>
+    <li>จ่ายขั้นต่ำทุกก้อน แล้วเอาเงินที่เหลือ <strong>อัดเพิ่มในหนี้ดอกสูงสุด</strong></li>
+    <li>พอปิดก้อนดอกสูงสุดได้ ก็นำเงินก้อนนั้นไปอัดดอกที่สูงรองลงมา</li>
+  </ul>
+
+  <p class="mt-2" style="font-size:12px; color:#9ca3af;">
+    หมายเหตุ: ในระบบนี้ การคำนวณจำนวนเดือนยังเป็นแบบง่าย ๆ ไม่ได้จำลองดอกเบี้ยจริงทุกเดือน
+    แต่ช่วยให้โอ็ตเห็นภาพรวมและเลือกทิศทางแผนได้ชัดเจนขึ้น
+  </p>
+</div>
+
+<div class="card-soft p-3 mb-4">
+  <h2 class="h6 mb-2">5. แนะนำ Workflow ที่ใช้งานได้จริง</h2>
+  <ol style="font-size:13px; padding-left:18px;">
+    <li>ทุกวัน: บันทึกเงินเข้า–ออก + แนบหลักฐาน (ถ้ามี)</li>
+    <li>ทุกสัปดาห์: เปิด Dashboard เช็ก <strong>สุทธิเดือนนี้</strong> และหมวดที่ใช้เยอะ</li>
+    <li>ทุกเดือน: ปรับงบประมาณ, เช็กเป้าหมาย ว่าขยับไปถึงไหนแล้ว</li>
+    <li>ทุก 3–6 เดือน: กลับมารีวิวหน้า <strong>แผนปลดหนี้</strong> ว่าควรปรับงบ หรือเปลี่ยนแผน Snowball/Avalanche ไหม</li>
+  </ol>
 </div>
 {% endblock %}

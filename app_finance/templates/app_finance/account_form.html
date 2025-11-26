@@ -1,0 +1,75 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}แก้ไขบัญชี - {{ account.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center">
+  <div>
+    <h1 class="h4 mb-1">แก้ไขบัญชี</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      แก้ข้อมูลบัญชี / กระเป๋า: {{ account.name }}
+    </div>
+  </div>
+  <a href="{% url 'app_finance:accounts_manage' %}" class="btn btn-ghost btn-sm">
+    ← กลับไปหน้าบัญชีทั้งหมด
+  </a>
+</div>
+
+<div class="card-soft p-3" style="max-width:520px;">
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="mb-2">
+      <label class="form-label">ชื่อบัญชี / กระเป๋า</label>
+      {{ form.name }}
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">ประเภท</label>
+      {{ form.account_type }}
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">ยอดตั้งต้น (Opening balance)</label>
+      {{ form.opening_balance }}
+      <div class="form-text text-secondary" style="font-size:11px;">
+        ถ้าเป็นหนี้ เช่น เงินกู้เริ่มต้น 300,000 ให้ใส่ -300000
+      </div>
+    </div>
+
+    <div class="mb-2">
+      <label class="form-label">วงเงิน (Credit limit)</label>
+      {{ form.credit_limit }}
+    </div>
+
+    {# ถ้า AccountForm มีฟิลด์ดอกเบี้ย/ขั้นต่ำอยู่แล้ว จะโชว์ด้วยเลย #}
+    {% if form.interest_rate %}
+      <div class="mb-2">
+        <label class="form-label">ดอกเบี้ยต่อปี (%)</label>
+        {{ form.interest_rate }}
+      </div>
+    {% endif %}
+
+    {% if form.min_payment_percent %}
+      <div class="mb-3">
+        <label class="form-label">ขั้นต่ำที่ต้องจ่ายต่อเดือน (%)</label>
+        {{ form.min_payment_percent }}
+      </div>
+    {% endif %}
+
+    <div class="form-check mb-3">
+      {{ form.is_active }}
+      <label class="form-check-label">ใช้งานอยู่</label>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-brand btn-sm">
+        บันทึกการแก้ไข
+      </button>
+      <a href="{% url 'app_finance:accounts_manage' %}" class="btn btn-ghost btn-sm">
+        ยกเลิก
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
