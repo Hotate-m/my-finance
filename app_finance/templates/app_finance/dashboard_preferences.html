@@ -1,0 +1,186 @@
+{% extends "app_finance/base.html" %}
+
+{% block title %}ตั้งค่าหน้า Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div>
+    <h1 class="h3 mb-1">ตั้งค่าหน้า Dashboard</h1>
+    <div class="text-secondary" style="font-size:13px;">
+      เลือกได้ว่าอยากให้ Dashboard ของโอ็ตแสดงการ์ดอะไรบ้าง
+    </div>
+  </div>
+  <a href="{% url 'app_finance:dashboard' %}" class="btn btn-ghost btn-sm">
+    กลับไป Dashboard
+  </a>
+</div>
+
+<div class="card-soft p-3">
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- กลุ่มภาพรวมหลัก -->
+    <div class="mb-3">
+      <div class="fw-semibold mb-1" style="font-size:13px;">
+        การ์ดภาพรวมหลัก
+      </div>
+      <div class="text-secondary mb-2" style="font-size:11px;">
+        ส่วนที่ช่วยให้เห็นภาพรวมชีวิตการเงินของโอ็ตในหน้าเดียว
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_today_summary"
+               name="show_today_summary"
+               {% if pref.show_today_summary %}checked{% endif %}>
+        <label class="form-check-label" for="show_today_summary">
+          แสดงการ์ด “สรุปวันนี้”
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_accounts"
+               name="show_accounts"
+               {% if pref.show_accounts %}checked{% endif %}>
+        <label class="form-check-label" for="show_accounts">
+          แสดงกล่อง “บัญชี / กระเป๋า”
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_recent_transactions"
+               name="show_recent_transactions"
+               {% if pref.show_recent_transactions %}checked{% endif %}>
+        <label class="form-check-label" for="show_recent_transactions">
+          แสดงกล่อง “รายการล่าสุด”
+        </label>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- กลุ่มวิเคราะห์ / กราฟ -->
+    <div class="mb-3">
+      <div class="fw-semibold mb-1" style="font-size:13px;">
+        การ์ดวิเคราะห์ / กราฟ
+      </div>
+      <div class="text-secondary mb-2" style="font-size:11px;">
+        ส่วนที่ช่วยให้เห็น pattern รายจ่ายและแนวโน้มในแต่ละเดือน
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_smart_insights"
+               name="show_smart_insights"
+               {% if pref.show_smart_insights %}checked{% endif %}>
+        <label class="form-check-label" for="show_smart_insights">
+          แสดงการ์ด “Smart Insights” (หมวดที่ใช้เยอะ + เทียบกับเฉลี่ย 3 เดือนก่อน)
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_trend_chart"
+               name="show_trend_chart"
+               {% if pref.show_trend_chart %}checked{% endif %}>
+        <label class="form-check-label" for="show_trend_chart">
+          แสดงกราฟเส้น “แนวโน้มรายรับ-รายจ่าย 6 เดือนล่าสุด”
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_expense_pie"
+               name="show_expense_pie"
+               {% if pref.show_expense_pie %}checked{% endif %}>
+        <label class="form-check-label" for="show_expense_pie">
+          แสดงกราฟวงกลม “สัดส่วนรายจ่ายตามหมวด (เดือนนี้)”
+        </label>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- กลุ่มงบประมาณ / ประมาณการ -->
+    <div class="mb-3">
+      <div class="fw-semibold mb-1" style="font-size:13px;">
+        งบประมาณ &amp; ประมาณการ
+      </div>
+      <div class="text-secondary mb-2" style="font-size:11px;">
+        ใช้สำหรับดูภาพรวมงบเดือนนี้และรายการที่ติ๊กเป็น “ประมาณการ”
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_budget_box"
+               name="show_budget_box"
+               {% if pref.show_budget_box %}checked{% endif %}>
+        <label class="form-check-label" for="show_budget_box">
+          แสดงการ์ด “งบประมาณรายจ่ายเดือนนี้”
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_estimate_box"
+               name="show_estimate_box"
+               {% if pref.show_estimate_box %}checked{% endif %}>
+        <label class="form-check-label" for="show_estimate_box">
+          แสดงการ์ด “ประมาณการเดือนนี้”
+        </label>
+      </div>
+    </div>
+
+    <hr>
+
+    <!-- กลุ่มเป้าหมาย / รายการประจำ / หนี้ -->
+    <div class="mb-3">
+      <div class="fw-semibold mb-1" style="font-size:13px;">
+        เป้าหมาย · รายการประจำ · แผนปลดหนี้
+      </div>
+      <div class="text-secondary mb-2" style="font-size:11px;">
+        สำหรับโฟกัสสิ่งที่โอ็ตอยากทำระยะยาว ทั้งเป้าหมายการเงินและหนี้
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_goals"
+               name="show_goals"
+               {% if pref.show_goals %}checked{% endif %}>
+        <label class="form-check-label" for="show_goals">
+          แสดงการ์ด “เป้าหมายที่กำลังเดินอยู่”
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_recurring"
+               name="show_recurring"
+               {% if pref.show_recurring %}checked{% endif %}>
+        <label class="form-check-label" for="show_recurring">
+          แสดงการ์ด “รายการประจำที่กำลังจะถึง”
+        </label>
+      </div>
+
+      <div class="form-check mb-2">
+        <input type="checkbox" class="form-check-input"
+               id="show_debt_plan_card"
+               name="show_debt_plan_card"
+               {% if pref.show_debt_plan_card %}checked{% endif %}>
+        <label class="form-check-label" for="show_debt_plan_card">
+          แสดงการ์ด “แผนปลดหนี้ที่ใช้อยู่ตอนนี้”
+        </label>
+      </div>
+    </div>
+
+    <div class="mt-3 d-flex justify-content-end">
+        <button type="submit" class="btn btn-brand btn-sm">
+            บันทึกการตั้งค่า
+        </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
