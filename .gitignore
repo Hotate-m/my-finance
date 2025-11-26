@@ -1,3 +1,7 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
 app_finance/__pycache__/__init__.cpython-312.pyc
 /Users/mac/Desktop/Project/my-finance/app_finance/migrations/__pycache__
 app_finance/__pycache__/admin.cpython-312.pyc
