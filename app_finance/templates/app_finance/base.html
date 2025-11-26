@@ -588,6 +588,7 @@
   </main>
 
   <!-- Quickbar เฉพาะมือถือ -->
+  {% if user.is_authenticated %}
   <div class="mobile-quickbar d-md-none">
     <div class="mobile-quickbar-inner py-2">
       <div class="app-container">
@@ -605,6 +606,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
   <footer class="py-3 text-center">
     จัดระบบเงินให้โอ็ตสบายใจขึ้นทีละวัน 💚
