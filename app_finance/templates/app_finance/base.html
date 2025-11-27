@@ -618,14 +618,15 @@
       <a href="{% url 'app_finance:categories_manage' %}" class="mobile-nav-link">หมวดหมู่</a>
       <a href="{% url 'app_finance:goals_list' %}" class="mobile-nav-link">เป้าหมาย</a>
       <a href="{% url 'app_finance:budgets_overview' %}" class="mobile-nav-link">งบประมาณ</a>
+      <a href="{% url 'app_finance:debts_overview' %}">แผนปลดหนี้</a>
       <a href="{% url 'app_finance:tools_home' %}" class="mobile-nav-link">เครื่องมือ</a>
 
       <div class="mobile-nav-section-title">อื่น ๆ</div>
       <a href="{% url 'app_finance:howto' %}" class="mobile-nav-link">วิธีใช้งาน</a>
 
-      <button type="button" class="mobile-nav-link js-theme-toggle mt-2">
+      <!-- <button type="button" class="mobile-nav-link js-theme-toggle mt-2">
         เปลี่ยนธีม (สว่าง / มืด)
-      </button>
+      </button> -->
 
       <a href="{% url 'logout' %}" class="mobile-nav-link mt-2" style="color:#fecaca;border-color:#fecaca;">
         ออกจากระบบ
