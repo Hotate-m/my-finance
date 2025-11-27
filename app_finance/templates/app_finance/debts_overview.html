@@ -88,7 +88,7 @@
             <div class="mt-2">
               <div class="text-secondary" style="font-size:12px;">ผลการจำลองแบบง่าย</div>
               <div style="font-size:13px;">
-                ถ้าโอ็ตจ่ายหนี้เดือนละ
+                ถ้าจ่ายหนี้เดือนละ
                 <span class="fw-semibold">฿{{ monthly_budget|floatformat:0 }}</span>
                 อย่างสม่ำเสมอ หนี้รวมประมาณ
                 <span class="fw-semibold text-danger">฿{{ total_debt|floatformat:0 }}</span>
@@ -247,7 +247,7 @@
         class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
     {% csrf_token %}
     <div>
-      <div class="fw-semibold mb-1">เลือกแผนปลดหนี้ที่โอ็ตจะใช้จริง</div>
+      <div class="fw-semibold mb-1">เลือกแผนปลดหนี้ที่จะใช้จริง</div>
       <div class="text-secondary" style="font-size:12px;">
         ระบบจะเอาไปโชว์บน Dashboard ทุกครั้งที่เปิด เพื่อเตือนว่าตอนนี้เราเดินตามแผนไหนอยู่
       </div>

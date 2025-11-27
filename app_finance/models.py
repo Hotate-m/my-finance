@@ -1,28 +1,44 @@
 from decimal import Decimal
+from math import ceil
+
+from django.conf import settings
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Sum
-from django.conf import settings
-from math import ceil
-from django.contrib.auth.models import User
 
 
 class Account(models.Model):
     ACCOUNT_TYPE_CHOICES = [
-        ('CASH', 'เงินสด'),
-        ('BANK', 'บัญชีธนาคาร'),
-        ('CREDIT', 'บัตรเครดิต'),
-        ('LOAN', 'เงินกู้'),
-        ('WALLET', 'E-Wallet'),
+        ("CASH", "เงินสด"),
+        ("BANK", "บัญชีธนาคาร"),
+        ("CREDIT", "บัตรเครดิต"),
+        ("LOAN", "เงินกู้"),
+        ("WALLET", "E-Wallet"),
     ]
+
+    # เจ้าของบัญชี (รองรับหลาย user)
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="finance_accounts",
+        null=True,
+        blank=True,
+    )
+
     name = models.CharField(max_length=100)
+
     account_type = models.CharField(max_length=10, choices=ACCOUNT_TYPE_CHOICES)
-    opening_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    opening_balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
     credit_limit = models.DecimalField(
         max_digits=12,
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="สำหรับบัตรเครดิต/วงเงินกู้ ถ้ามี"
+        help_text="สำหรับบัตรเครดิต/วงเงินกู้ ถ้ามี",
     )
     interest_rate = models.DecimalField(
         max_digits=5,
@@ -45,33 +61,34 @@ class Account(models.Model):
 
     @property
     def current_balance(self):
-        total_in = self.transactions.filter(direction='IN').aggregate(
-            s=Sum('amount')
-        )['s'] or Decimal('0')
-        total_out = self.transactions.filter(direction='OUT').aggregate(
-            s=Sum('amount')
-        )['s'] or Decimal('0')
-        opening = self.opening_balance or Decimal('0')
-        return opening + total_in - total_out
-    
-    @property
-    def current_balance(self):
-        """ยอดปัจจุบัน = opening_balance + ผลรวม amount ใน Transaction ทั้งหมดของบัญชีนี้"""
+        """
+        ยอดปัจจุบัน = opening_balance + (รวมรายรับ - รวมรายจ่าย)
+        ใช้กรณีที่ amount ของ Transaction เก็บเป็นจำนวนบวกเสมอ
+        """
         opening = self.opening_balance or Decimal("0")
-        total_tx = self.transactions.aggregate(s=Sum("amount"))["s"] or Decimal("0")
-        return opening + total_tx
-class Category(models.Model):
+        total_in = (
+            self.transactions.filter(direction="IN").aggregate(s=Sum("amount"))["s"]
+            or Decimal("0")
+        )
+        total_out = (
+            self.transactions.filter(direction="OUT").aggregate(s=Sum("amount"))["s"]
+            or Decimal("0")
+        )
+        return opening + total_in - total_out
 
+
+class Category(models.Model):
     KIND_CHOICES = [
-        ('INCOME', 'รายรับ'),
-        ('EXPENSE', 'รายจ่าย'),
+        ("INCOME", "รายรับ"),
+        ("EXPENSE", "รายจ่าย"),
     ]
+
     name = models.CharField(max_length=100)
     kind = models.CharField(max_length=10, choices=KIND_CHOICES)
 
     is_debt_related = models.BooleanField(
         default=False,
-        help_text="ติ๊กถ้าเป็นรายการเกี่ยวกับหนี้ เช่น ผ่อนหนี้, จ่ายบัตรเครดิต"
+        help_text="ติ๊กถ้าเป็นรายการเกี่ยวกับหนี้ เช่น ผ่อนหนี้, จ่ายบัตรเครดิต",
     )
 
     monthly_budget = models.DecimalField(
@@ -79,33 +96,52 @@ class Category(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="งบต่อเดือนสำหรับหมวดนี้ (ถ้าไม่ตั้งงบให้เว้นว่าง)"
+        help_text="งบต่อเดือนสำหรับหมวดนี้ (ถ้าไม่ตั้งงบให้เว้นว่าง)",
     )
 
     def __str__(self):
         return f"{self.name} ({self.get_kind_display()})"
-    
+
+
 class Tag(models.Model):
     """ป้ายกำกับ (เช่น เที่ยว, ครอบครัว, งาน) ให้แต่ละรายการ"""
-    name = models.CharField(max_length=50, unique=True)
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="finance_tags",
+        null=True,
+        blank=True,
+    )
+    name = models.CharField(max_length=50)
     color = models.CharField(
         max_length=7,
         blank=True,
         null=True,
-        help_text="ใส่สีแบบ #RRGGBB ถ้าอยากกำหนดสีเฉพาะ (ยังไม่บังคับใช้ก็ได้)"
+        help_text="ใส่สีแบบ #RRGGBB ถ้าอยากกำหนดสีเฉพาะ (ยังไม่บังคับใช้ก็ได้)",
     )
 
     class Meta:
         ordering = ["name"]
+        unique_together = ("owner", "name")
 
     def __str__(self):
         return self.name
-    
+
+
 class TransactionTemplate(models.Model):
     """Template สำหรับรายการด่วน เช่น 'กาแฟ', 'BTS ไปทำงาน' ฯลฯ"""
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="finance_templates",
+        null=True,
+        blank=True,
+    )
     name = models.CharField(
         max_length=100,
-        help_text="ชื่อ template เช่น กาแฟ, BTS ไปทำงาน"
+        help_text="ชื่อ template เช่น กาแฟ, BTS ไปทำงาน",
     )
     direction = models.CharField(
         max_length=3,
@@ -117,7 +153,7 @@ class TransactionTemplate(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="จำนวนเงินเริ่มต้น (เปลี่ยนได้ตอนบันทึก)"
+        help_text="จำนวนเงินเริ่มต้น (เปลี่ยนได้ตอนบันทึก)",
     )
     account = models.ForeignKey(
         "Account",
@@ -150,41 +186,45 @@ class TransactionTemplate(models.Model):
         ordering = ["name"]
 
     def __str__(self):
-        return self.name    
-    
+        return self.name
+
+
 class Goal(models.Model):
-
     GOAL_DIRECTION_CHOICES = [
-        ('IN', 'เงินเข้า'),
-        ('OUT', 'เงินออก'),
+        ("IN", "เงินเข้า"),
+        ("OUT", "เงินออก"),
     ]
-    name = models.CharField(max_length=100)
 
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="finance_goals",
+        null=True,
+        blank=True,
+    )
+    name = models.CharField(max_length=100)
     account = models.ForeignKey(
         Account,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="บัญชีที่เกี่ยวข้องกับเป้าหมายนี้ (ถ้ามี)"
+        help_text="บัญชีที่เกี่ยวข้องกับเป้าหมายนี้ (ถ้ามี)",
     )
-
     target_amount = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        help_text="จำนวนเงินเป้าหมาย เช่น 100000"
+        help_text="จำนวนเงินเป้าหมาย เช่น 100000",
     )
-
     target_date = models.DateField(
         null=True,
         blank=True,
-        help_text="อยากให้ถึงเป้าภายในวันไหน (ถ้าไม่กำหนดให้เว้นว่าง)"
+        help_text="อยากให้ถึงเป้าภายในวันไหน (ถ้าไม่กำหนดให้เว้นว่าง)",
     )
-
     direction = models.CharField(
         max_length=3,
         choices=GOAL_DIRECTION_CHOICES,
         default="IN",
-        help_text="นับยอดจากรายการแบบไหนเป็นการเดินหน้าเป้าหมาย (ส่วนใหญ่ใช้ เงินเข้า)"
+        help_text="นับยอดจากรายการแบบไหนเป็นการเดินหน้าเป้าหมาย (ส่วนใหญ่ใช้ เงินเข้า)",
     )
 
     is_active = models.BooleanField(default=True)
@@ -196,23 +236,30 @@ class Goal(models.Model):
     def __str__(self):
         return self.name
 
-class Transaction(models.Model):
 
+class Transaction(models.Model):
     DIRECTION_CHOICES = [
-        ('IN', 'เงินเข้า'),
-        ('OUT', 'เงินออก'),
+        ("IN", "เงินเข้า"),
+        ("OUT", "เงินออก"),
     ]
 
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="finance_transactions",
+        null=True,
+        blank=True,
+    )
     account = models.ForeignKey(
         Account,
         on_delete=models.CASCADE,
-        related_name='transactions'
+        related_name="transactions",
     )
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
     goal = models.ForeignKey(
         Goal,
@@ -220,7 +267,7 @@ class Transaction(models.Model):
         null=True,
         blank=True,
         related_name="transactions",
-        help_text="ถ้ารายการนี้เกี่ยวข้องกับเป้าหมายเก็บเงิน ให้เลือก"
+        help_text="ถ้ารายการนี้เกี่ยวข้องกับเป้าหมายเก็บเงิน ให้เลือก",
     )
 
     proof_file = models.FileField(
@@ -243,22 +290,22 @@ class Transaction(models.Model):
 
     is_estimate = models.BooleanField(
         default=False,
-        help_text="ติ๊กถ้าเป็นรายการประเมิน/วางแผน ยังไม่ได้เกิดขึ้นจริง"
+        help_text="ติ๊กถ้าเป็นรายการประเมิน/วางแผน ยังไม่ได้เกิดขึ้นจริง",
     )
     is_paid = models.BooleanField(
         default=True,
-        help_text="ใช้คู่กับ is_estimate ถ้าเป็นประมาณการแล้วจ่ายจริงแล้ว"
+        help_text="ใช้คู่กับ is_estimate ถ้าเป็นประมาณการแล้วจ่ายจริงแล้ว",
     )
 
     note = models.TextField(blank=True, null=True)
 
-    # 👇 ใหม่: เอาไว้ผูกว่ามาจาก recurring ตัวไหน (ถ้ามี)
+    # ผูกกับ recurring ที่สร้างมัน (ถ้ามี)
     source_recurring = models.ForeignKey(
-        'RecurringTransaction',
+        "RecurringTransaction",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='generated_transactions'
+        related_name="generated_transactions",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -273,31 +320,47 @@ class RecurringTransaction(models.Model):
     """
     รายการประจำ เช่น ค่าเช่า, ผ่อนหนี้, เน็ต, เงินเดือน ฯลฯ
     """
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="finance_recurring",
+        null=True,
+        blank=True,
+    )
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
     direction = models.CharField(
         max_length=3,
-        choices=Transaction.DIRECTION_CHOICES
+        choices=Transaction.DIRECTION_CHOICES,
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2)
 
     day_of_month = models.PositiveSmallIntegerField(
-        help_text="วันที่ในเดือน (1-31) พระเอกใช้สร้างรายการของเดือนนั้น"
+        help_text="วันที่ในเดือน (1-31) พระเอกใช้สร้างรายการของเดือนนั้น",
     )
     name = models.CharField(
         max_length=100,
         blank=True,
-        help_text="คำอธิบายสั้น ๆ เช่น ค่าเช่าห้อง, ผ่อนรถ"
+        help_text="คำอธิบายสั้น ๆ เช่น ค่าเช่าห้อง, ผ่อนรถ",
     )
 
     is_active = models.BooleanField(default=True)
-    start_date = models.DateField(null=True, blank=True, help_text="เริ่มนับจากวันไหน (ถ้าไม่กรอกใช้ได้ทันที)")
-    end_date = models.DateField(null=True, blank=True, help_text="สิ้นสุดวันไหน (ถ้าไม่กรอกให้ใช้ไปเรื่อย ๆ)")
+    start_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="เริ่มนับจากวันไหน (ถ้าไม่กรอกใช้ได้ทันที)",
+    )
+    end_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="สิ้นสุดวันไหน (ถ้าไม่กรอกให้ใช้ไปเรื่อย ๆ)",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -305,12 +368,20 @@ class RecurringTransaction(models.Model):
     def __str__(self):
         direction = "รับ" if self.direction == "IN" else "จ่าย"
         return f"[ประจำ] ทุกวันที่ {self.day_of_month} {direction} {self.amount} ({self.account})"
-    
+
+
 class CategoryBudget(models.Model):
     """
-    งบประมาณรายจ่ายต่อหมวด ต่อเดือน/ปี
-    ใช้เพื่อเทียบกับรายจ่ายจริงในแต่ละหมวด
+    งบประมาณรายจ่ายต่อหมวด ต่อเดือน/ปี (แยกตาม owner)
     """
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="category_budgets",
+        null=True,
+        blank=True,
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
@@ -328,7 +399,7 @@ class CategoryBudget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("category", "year", "month")
+        unique_together = ("owner", "category", "year", "month")
         ordering = ["-year", "-month", "category__name"]
 
     def __str__(self):
@@ -337,7 +408,8 @@ class CategoryBudget(models.Model):
     @property
     def amount_display(self) -> Decimal:
         return self.amount or Decimal("0")
-    
+
+
 class DebtPlanSetting(models.Model):
     STRATEGY_CHOICES = [
         ("NONE", "ยังไม่เลือกแผนเฉพาะ"),
@@ -360,11 +432,13 @@ class DebtPlanSetting(models.Model):
 
     def __str__(self):
         return f"Debt plan: {self.get_strategy_display()}"
-    
+
+
 class DashboardPreference(models.Model):
     """
     ตั้งค่าหน้าว่า Dashboard จะแสดงการ์ดอะไรบ้าง (ต่อ User 1 คน = 1 record)
     """
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -387,4 +461,3 @@ class DashboardPreference(models.Model):
 
     def __str__(self):
         return f"Dashboard preference for {self.user}"
-
