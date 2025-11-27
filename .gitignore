@@ -10,6 +10,7 @@ db.sqlite3
 
 # Virtualenv
 venv/
+.venv/
 .myvenv/
 myfinance-venv/
 
@@ -20,5 +21,15 @@ myfinance-venv/
 # Environment / secrets
 .env
 .env.*
-
 *.backup
+
+
+
+# macOS junk
+.DS_Store
+
+# Logs
+*.log
+
+# Media uploads (ถ้ามีโฟลเดอร์เก็บรูป/ไฟล์จริง)
+media/
