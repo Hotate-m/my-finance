@@ -23,8 +23,6 @@ myfinance-venv/
 .env.*
 *.backup
 
-
-
 # macOS junk
 .DS_Store
 

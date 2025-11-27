@@ -495,6 +495,17 @@
         display:none;
       }
     }
+
+    #themeToggle{
+      margin-right: 10px;  /* สำหรับจอใหญ่ */
+    }
+
+    /* จอมือถือ – ขยับให้ห่างเป็นพิเศษ */
+    @media (max-width: 768px){
+      #themeToggle{
+        margin-right: 18px;  /* ถ้ายังใกล้ไป เปลี่ยนเป็น 22 ก็ได้ */
+      }
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -561,7 +572,7 @@
         </div>
 
         <!-- ปุ่มสลับ Theme (เดสก์ท็อป) -->
-        <button type="button" class="btn btn-ghost btn-sm js-theme-toggle" title="เปลี่ยนธีม">
+        <button id="themeToggle" type="button" class="btn btn-ghost btn-sm me-3" title="เปลี่ยนธีม">
           🌙
         </button>
 
@@ -618,7 +629,7 @@
       <a href="{% url 'app_finance:categories_manage' %}" class="mobile-nav-link">หมวดหมู่</a>
       <a href="{% url 'app_finance:goals_list' %}" class="mobile-nav-link">เป้าหมาย</a>
       <a href="{% url 'app_finance:budgets_overview' %}" class="mobile-nav-link">งบประมาณ</a>
-      <a href="{% url 'app_finance:debts_overview' %}">แผนปลดหนี้</a>
+      <a href="{% url 'app_finance:debts_overview' %}" class="mobile-nav-link">แผนปลดหนี้</a>
       <a href="{% url 'app_finance:tools_home' %}" class="mobile-nav-link">เครื่องมือ</a>
 
       <div class="mobile-nav-section-title">อื่น ๆ</div>
