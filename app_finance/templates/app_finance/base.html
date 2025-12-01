@@ -398,8 +398,12 @@
     }
 
     .table-dark{
+      /* โหมดมืด: bg โปร่ง + ตัวหนังสือสีอ่อน */
       --bs-table-bg: transparent;
       --bs-table-border-color: rgba(30,41,59,.8);
+      --bs-table-color: #e5e7eb;
+      --bs-table-striped-color: #e5e7eb;
+      --bs-table-hover-color: #e5e7eb;
     }
     .table-dark tbody tr:hover{
       background:rgba(15,23,42,.9);
@@ -407,6 +411,9 @@
     html[data-theme="light"] .table-dark{
       --bs-table-bg: #ffffff;
       --bs-table-border-color:#e5e7eb;
+      --bs-table-color: #0f172a;
+      --bs-table-striped-color: #0f172a;
+      --bs-table-hover-color: #0f172a;
     }
     html[data-theme="light"] .table-dark tbody tr:hover{
       background:#f9fafb;
@@ -428,6 +435,10 @@
       background:#ffffff;
       border-top:1px solid #e5e7eb;
       box-shadow:0 -10px 25px rgba(15,23,42,.16);
+    }
+    html[data-theme="light"] .table-dark th,
+    html[data-theme="light"] .table-dark td{
+      color:#0f172a;
     }
     .mobile-quickbar-btn{
       flex:1;
