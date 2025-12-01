@@ -41,14 +41,14 @@
     </div>
   </div>
 
-  <!-- Simulator -->
+  <!-- Simulator (ใช้ค่าที่เซฟไว้ใน plan) -->
   <div class="col-12 col-md-6">
     <div class="card-soft-ghost p-3 h-100">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div>
           <div class="fw-semibold">ลองจำลองแผนจ่ายหนี้</div>
           <div class="text-secondary" style="font-size:12px;">
-            ป้อนงบที่อยากจ่ายหนี้ต่อเดือน ระบบจะคำนวณแบบง่าย ๆ ให้ดู
+            ระบบจะอิงจากงบจ่ายหนี้ต่อเดือนที่คุณตั้งไว้ในฟอร์มด้านล่าง
           </div>
         </div>
         <span class="badge-chip">Simulator</span>
@@ -59,51 +59,30 @@
           ยังไม่มีหนี้ให้จำลอง ลองเช็กยอดบัญชีบัตรเครดิต/เงินกู้ในหน้าบัญชีดูก่อนคับ
         </div>
       {% else %}
-        <form method="get" class="mb-2">
-          <div class="mb-2">
-            <label class="form-label" style="font-size:12px;">งบจ่ายหนี้ต่อเดือน (ประมาณ)</label>
-            <div class="input-group input-group-sm">
-              <span class="input-group-text">฿</span>
-              <input type="number" step="100" min="0"
-                     name="monthly_budget"
-                     value="{{ monthly_budget_raw }}"
-                     class="form-control"
-                     placeholder="เช่น 5000, 10000">
-            </div>
-            <div class="form-text text-secondary" style="font-size:11px;">
-              * เป็นการคำนวณแบบหยาบ ๆ: หนี้รวม ÷ งบต่อเดือน (ยังไม่คิดดอกเบี้ยจริง)
-            </div>
+        {% if not monthly_budget or monthly_budget <= 0 %}
+          <div class="text-secondary" style="font-size:13px;">
+            ยังไม่ได้ตั้งงบจ่ายหนี้ต่อเดือนเลยคับ 🙌<br>
+            ลองเลื่อนลงไปตั้งค่าที่ส่วน <span class="fw-semibold">“เลือกแผนปลดหนี้ที่จะใช้จริง”</span> ด้านล่าง
           </div>
-          <button type="submit" class="btn btn-brand btn-sm w-100">
-            คำนวณแผนจ่ายหนี้
-          </button>
-        </form>
-
-        {% if monthly_budget_raw %}
-          {% if not monthly_budget or monthly_budget <= 0 %}
-            <div class="text-danger" style="font-size:12px;">
-              กรุณากรอกงบจ่ายหนี้ต่อเดือนเป็นตัวเลขมากกว่า 0 คับ
-            </div>
-          {% elif sim_months %}
-            <div class="mt-2">
-              <div class="text-secondary" style="font-size:12px;">ผลการจำลองแบบง่าย</div>
-              <div style="font-size:13px;">
-                ถ้าจ่ายหนี้เดือนละ
-                <span class="fw-semibold">฿{{ monthly_budget|floatformat:0 }}</span>
-                อย่างสม่ำเสมอ หนี้รวมประมาณ
-                <span class="fw-semibold text-danger">฿{{ total_debt|floatformat:0 }}</span>
+        {% else %}
+          <div class="mt-1">
+            <div class="text-secondary" style="font-size:12px;">ผลการจำลองแบบง่าย (ยังไม่คิดดอกทบซ้อนจริง ๆ)</div>
+            <div style="font-size:13px;">
+              ถ้าจ่ายหนี้เดือนละ
+              <span class="fw-semibold">฿{{ monthly_budget|floatformat:0 }}</span>
+              อย่างสม่ำเสมอ หนี้รวมประมาณ
+              <span class="fw-semibold text-danger">฿{{ total_debt|floatformat:0 }}</span>
+              {% if sim_months %}
                 จะหมดในราว ๆ
                 <span class="fw-semibold text-success">{{ sim_months }} เดือน</span>
-              </div>
-              <div class="text-secondary" style="font-size:11px;">
-                แนะนำ: ใช้แผน Snowball / Avalanche ด้านล่างร่วมด้วย เพื่อเลือกว่าจะโฟกัสบัญชีไหนก่อน
-              </div>
+              {% else %}
+                ระบบยังคำนวณเดือนไม่ได้ (เช็กงบอีกครั้งคับ)
+              {% endif %}
             </div>
-          {% else %}
-            <div class="text-secondary" style="font-size:12px;">
-              ไม่สามารถคำนวณได้ ลองกรอกตัวเลขใหม่อีกครั้งคับ
+            <div class="text-secondary" style="font-size:11px;">
+              แนะนำ: ใช้แผน Snowball / Avalanche ด้านล่างร่วมด้วย เพื่อเลือกว่าจะโฟกัสบัญชีไหนก่อน
             </div>
-          {% endif %}
+          </div>
         {% endif %}
       {% endif %}
     </div>
@@ -241,40 +220,73 @@
   </div>
 </div>
 
-<!-- ฟอร์มเลือกแผนปลดหนี้ที่ใช้อยู่ -->
-<div class="card-soft-ghost p-3 mb-3">
+<!-- ฟอร์มเลือกแผนปลดหนี้ + ตั้งงบต่อเดือน -->
+<div class="card-soft-ghost p-3 mb-3" id="plan-form">
   <form method="post"
-        class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        class="d-flex flex-column gap-3">
     {% csrf_token %}
     <div>
-      <div class="fw-semibold mb-1">เลือกแผนปลดหนี้ที่จะใช้จริง</div>
+      <div class="fw-semibold mb-1">เลือกแผนปลดหนี้ที่จะใช้จริง + ตั้งงบจ่ายหนี้ต่อเดือน</div>
       <div class="text-secondary" style="font-size:12px;">
-        ระบบจะเอาไปโชว์บน Dashboard ทุกครั้งที่เปิด เพื่อเตือนว่าตอนนี้เราเดินตามแผนไหนอยู่
+        ระบบจะเอาค่านี้ไปโชว์บน Dashboard และใช้จำลองแผนจ่ายหนี้ในส่วน Simulator ด้านบน
       </div>
     </div>
-    <div class="d-flex flex-column flex-md-row gap-2" style="font-size:13px;">
-      <label class="badge-chip" style="cursor:pointer;">
-        <input type="radio" name="strategy" value="SNOWBALL"
-               {% if plan and plan.strategy == "SNOWBALL" %}checked{% endif %}
-               style="margin-right:6px;">
-        Snowball (ยอดเล็กก่อน)
-      </label>
-      <label class="badge-chip" style="cursor:pointer;">
-        <input type="radio" name="strategy" value="AVALANCHE"
-               {% if plan and plan.strategy == "AVALANCHE" %}checked{% endif %}
-               style="margin-right:6px;">
-        Avalanche (ดอกสูงก่อน)
-      </label>
-      <label class="badge-chip" style="cursor:pointer;">
-        <input type="radio" name="strategy" value="NONE"
-               {% if plan and plan.strategy == "NONE" %}checked{% endif %}
-               style="margin-right:6px;">
-        ยังไม่เลือก
-      </label>
-      <button type="submit" class="btn btn-brand btn-sm">
-        บันทึกแผน
-      </button>
+
+    <div class="row g-3 align-items-end">
+      <!-- งบจ่ายหนี้ต่อเดือน -->
+      <div class="col-12 col-md-4">
+        <label class="form-label" style="font-size:12px;">งบจ่ายหนี้ต่อเดือน (รวมทุกบัญชี)</label>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text">฿</span>
+          <input type="text"
+                 name="monthly_budget"
+                 class="form-control"
+                 placeholder="เช่น 5000, 10000"
+                 value="{{ monthly_budget_raw }}">
+        </div>
+        <div class="form-text text-secondary" style="font-size:11px;">
+          ใส่เป็นประมาณการคร่าว ๆ ก่อนก็ได้ เดี๋ยวค่อยปรับภายหลัง
+        </div>
+      </div>
+
+      <!-- กลยุทธ์ -->
+      <div class="col-12 col-md-6">
+        <div class="d-flex flex-wrap gap-2" style="font-size:13px;">
+          <label class="badge-chip" style="cursor:pointer;">
+            <input type="radio" name="strategy" value="SNOWBALL"
+                   {% if plan and plan.strategy == "SNOWBALL" %}checked{% endif %}
+                   style="margin-right:6px;">
+            Snowball (ยอดเล็กก่อน)
+          </label>
+          <label class="badge-chip" style="cursor:pointer;">
+            <input type="radio" name="strategy" value="AVALANCHE"
+                   {% if plan and plan.strategy == "AVALANCHE" %}checked{% endif %}
+                   style="margin-right:6px;">
+            Avalanche (ดอกสูงก่อน)
+          </label>
+          <label class="badge-chip" style="cursor:pointer;">
+            <input type="radio" name="strategy" value="NONE"
+                   {% if plan and plan.strategy == "NONE" %}checked{% endif %}
+                   style="margin-right:6px;">
+            ยังไม่เลือก
+          </label>
+        </div>
+      </div>
+
+      <!-- ปุ่มบันทึก -->
+      <div class="col-12 col-md-2 d-grid">
+        <button type="submit" class="btn btn-brand btn-sm">
+          บันทึกแผน
+        </button>
+      </div>
     </div>
+
+    {% if monthly_budget and sim_months %}
+      <div class="text-secondary" style="font-size:11px;">
+        ตอนนี้ตั้งงบไว้ที่ <span class="fw-semibold">฿{{ monthly_budget|floatformat:0 }}</span>/เดือน
+        → ใช้เวลาประมาณ <span class="fw-semibold">{{ sim_months }} เดือน</span> ในการปลดหนี้รวม (คำนวณแบบหยาบ ๆ)
+      </div>
+    {% endif %}
   </form>
 </div>
 

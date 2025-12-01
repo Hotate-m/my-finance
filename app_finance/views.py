@@ -1,9 +1,11 @@
 import csv
 import calendar
+from math import ceil
 from decimal import Decimal
 from datetime import date, datetime
 
 from django.db.models import Sum, Q
+
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import logout
@@ -214,13 +216,14 @@ def transactions_export_csv(request):
 
 @login_required
 def dashboard(request):
-    """หน้า Dashboard หลัก แยกตาม user"""
+    """Dashboard หลัก (ข้อมูลเฉพาะของ user คนนี้)"""
+    user = request.user
     today = timezone.now().date()
     year = today.year
     month = today.month
 
-    # ===== บัญชี & Net Worth ของ user =====
-    accounts = Account.objects.filter(owner=request.user, is_active=True)
+    # ===== บัญชี & Net Worth (ของ user นี้เท่านั้น) =====
+    accounts = Account.objects.filter(owner=user, is_active=True)
 
     total_assets = Decimal("0")
     total_debt = Decimal("0")
@@ -234,21 +237,25 @@ def dashboard(request):
 
     net_worth = total_assets - total_debt
 
-    # ===== รายรับ/รายจ่าย "จริง" ของเดือนนี้ =====
-    month_tx = Transaction.objects.filter(
-        owner=request.user,
+    # ===== รายรับ/รายจ่ายจริงของเดือนนี้ =====
+    base_month_qs = Transaction.objects.filter(
+        owner=user,
         date__year=year,
         date__month=month,
         is_estimate=False,
     )
 
-    income_month = month_tx.filter(direction="IN").aggregate(s=Sum("amount"))["s"] or Decimal("0")
-    expense_month = month_tx.filter(direction="OUT").aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    income_month = base_month_qs.filter(direction="IN").aggregate(
+        s=Sum("amount")
+    )["s"] or Decimal("0")
+    expense_month = base_month_qs.filter(direction="OUT").aggregate(
+        s=Sum("amount")
+    )["s"] or Decimal("0")
     net_month = income_month - expense_month
 
-    # ===== รายรับ/รายจ่าย "ประมาณการ" ของเดือนนี้ =====
+    # ===== ประมาณการเดือนนี้ =====
     est_tx = Transaction.objects.filter(
-        owner=request.user,
+        owner=user,
         date__year=year,
         date__month=month,
         is_estimate=True,
@@ -257,17 +264,17 @@ def dashboard(request):
     est_expense = est_tx.filter(direction="OUT").aggregate(s=Sum("amount"))["s"] or Decimal("0")
     est_net = est_income - est_expense
 
-    # ===== รายรับ/รายจ่าย "วันนี้" =====
-    today_tx = Transaction.objects.filter(
-        owner=request.user,
+    # ===== วันนี้ =====
+    today_qs = Transaction.objects.filter(
+        owner=user,
         date=today,
         is_estimate=False,
     )
-    today_income = today_tx.filter(direction="IN").aggregate(s=Sum("amount"))["s"] or Decimal("0")
-    today_expense = today_tx.filter(direction="OUT").aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    today_income = today_qs.filter(direction="IN").aggregate(s=Sum("amount"))["s"] or Decimal("0")
+    today_expense = today_qs.filter(direction="OUT").aggregate(s=Sum("amount"))["s"] or Decimal("0")
     today_net = today_income - today_expense
 
-    def fmt(amount):
+    def fmt(amount: Decimal) -> str:
         a = amount or Decimal("0")
         return f"{a:.2f}"
 
@@ -278,16 +285,13 @@ def dashboard(request):
     # ===== รายการล่าสุด 10 รายการ =====
     recent_tx = (
         Transaction.objects
-        .filter(owner=request.user)
+        .filter(owner=user)
         .select_related("account", "category")
         .order_by("-date", "-id")[:10]
     )
 
-    # ===== กราฟ 6 เดือนย้อนหลัง (ของ user นี้) =====
-    labels = []
-    income_data = []
-    expense_data = []
-
+    # ===== กราฟ 6 เดือนล่าสุด =====
+    labels, income_data, expense_data = [], [], []
     months_back = []
     for i in range(5, -1, -1):
         m = month - i
@@ -308,21 +312,20 @@ def dashboard(request):
         labels.append(label)
 
         base_qs = Transaction.objects.filter(
-            owner=request.user,
+            owner=user,
             date__year=y2,
             date__month=m2,
             is_estimate=False,
         )
         inc = base_qs.filter(direction="IN").aggregate(s=Sum("amount"))["s"] or Decimal("0")
         exp = base_qs.filter(direction="OUT").aggregate(s=Sum("amount"))["s"] or Decimal("0")
-
         income_data.append(float(inc))
         expense_data.append(float(exp))
 
-    # ===== รายจ่ายต่อหมวดในเดือนนี้ =====
+    # ===== รายจ่ายต่อหมวดเดือนนี้ (ของ user) =====
     expense_by_cat_qs = (
         Transaction.objects.filter(
-            owner=request.user,
+            owner=user,
             date__year=year,
             date__month=month,
             direction="OUT",
@@ -333,8 +336,7 @@ def dashboard(request):
         .order_by("-total")
     )
 
-    cat_labels = []
-    cat_values = []
+    cat_labels, cat_values = [], []
     expense_map_by_cat = {}
     for row in expense_by_cat_qs:
         cid = row["category_id"]
@@ -344,16 +346,15 @@ def dashboard(request):
         cat_labels.append(name)
         cat_values.append(float(total))
 
-    # ===== Smart Insights =====
+    # Smart Insights – หมวดเยอะสุด
     insight_top_category_name = None
     insight_top_category_amount = None
-
     if expense_by_cat_qs:
         top = expense_by_cat_qs[0]
         insight_top_category_name = top["category__name"] or "ไม่ระบุหมวด"
         insight_top_category_amount = top["total"] or Decimal("0")
 
-    # เทียบรายจ่ายเดือนนี้กับเฉลี่ย 3 เดือนก่อนหน้า
+    # เทียบกับค่าเฉลี่ย 3 เดือนก่อนหน้า (รวมทั้งเดือน)
     last3_months = []
     for i in range(1, 4):
         m = month - i
@@ -367,7 +368,7 @@ def dashboard(request):
     count_prev = 0
     for y3, m3 in last3_months:
         prev_qs = Transaction.objects.filter(
-            owner=request.user,
+            owner=user,
             date__year=y3,
             date__month=m3,
             is_estimate=False,
@@ -378,22 +379,21 @@ def dashboard(request):
         count_prev += 1
 
     avg_exp_prev = total_exp_prev / count_prev if count_prev > 0 else None
-
     insight_expense_vs_avg = None
     insight_expense_vs_avg_percent = None
     insight_expense_higher = None
 
-    if avg_exp_prev is not None and avg_exp_prev > 0:
+    if avg_exp_prev and avg_exp_prev > 0:
         diff = expense_month - avg_exp_prev
         insight_expense_vs_avg = diff
         insight_expense_higher = diff > 0
         insight_expense_vs_avg_percent = float((diff / avg_exp_prev) * 100)
 
-    # ===== งบประมาณรายจ่ายเดือนนี้ (ของ user นี้) =====
+    # ===== งบประมาณรายหมวดของ user นี้ =====
     budget_items = []
     budgets_qs = (
         CategoryBudget.objects
-        .filter(owner=request.user, year=year, month=month)
+        .filter(owner=user, year=year, month=month)
         .select_related("category")
     )
 
@@ -402,11 +402,7 @@ def dashboard(request):
         budget_amount = b.amount or Decimal("0")
         spent = expense_map_by_cat.get(b.category_id, Decimal("0"))
         diff_b = budget_amount - spent
-        if budget_amount > 0:
-            percent_b = float(spent / budget_amount * 100)
-        else:
-            percent_b = None
-
+        percent_b = float(spent / budget_amount * 100) if budget_amount > 0 else None
         over = spent > budget_amount
         if over:
             budget_over_count += 1
@@ -429,11 +425,11 @@ def dashboard(request):
     budget_items_dashboard = budget_items_sorted[:3]
     budget_total_count = len(budget_items)
 
-    # ===== เป้าหมาย (preview 3 เป้า ของ user) =====
+    # ===== เป้าหมายของ user นี้ =====
     goals_preview = []
-    for g in Goal.objects.filter(owner=request.user, is_active=True).select_related("account")[:3]:
+    for g in Goal.objects.filter(owner=user, is_active=True).select_related("account").order_by("target_date", "name")[:3]:
         qs_goal = Transaction.objects.filter(
-            owner=request.user,
+            owner=user,
             goal=g,
             is_estimate=False,
             direction=g.direction,
@@ -455,82 +451,59 @@ def dashboard(request):
     upcoming_recurring = []
     last_day = calendar.monthrange(year, month)[1]
 
-    recurrings_qs = RecurringTransaction.objects.filter(
-        owner=request.user,
-        is_active=True,
-    ).select_related("account", "category")
-
-    for r in recurrings_qs:
+    for r in RecurringTransaction.objects.filter(owner=user, is_active=True).select_related("account", "category"):
         d = min(r.day_of_month, last_day)
         next_date = today.replace(day=d)
         if next_date < today:
             continue
-
-        upcoming_recurring.append({
-            "obj": r,
-            "next_date": next_date,
-        })
+        upcoming_recurring.append({"obj": r, "next_date": next_date})
 
     upcoming_recurring.sort(key=lambda x: x["next_date"])
     upcoming_recurring = upcoming_recurring[:5]
 
-    # ===== ตั้งค่าหน้าจอ Dashboard ของ user นี้ =====
-    dash_pref, _ = DashboardPreference.objects.get_or_create(user=request.user)
-
-    # ===== แผนปลดหนี้ (ใช้ setting เดียวทั้งระบบ) =====
-    debt_plan = DebtPlanSetting.objects.first()
+    # ===== ตั้งค่าหน้า dashboard & แผนปลดหนี้ของ user =====
+    dash_pref, _ = DashboardPreference.objects.get_or_create(user=user)
+    debt_plan, _ = DebtPlanSetting.objects.get_or_create(user=user)
 
     context = {
         "today": today,
-
         "total_assets": total_assets,
         "total_liabilities": total_debt,
         "net_worth": net_worth,
         "accounts": accounts,
-
         "income_month": income_month,
         "expense_month": expense_month,
         "net_month": net_month,
-
         "est_income": est_income,
         "est_expense": est_expense,
         "est_net": est_net,
-
         "today_income": today_income,
         "today_expense": today_expense,
         "today_net": today_net,
         "today_income_str": today_income_str,
         "today_expense_str": today_expense_str,
         "today_net_str": today_net_str,
-
         "recent_tx": recent_tx,
-
         "chart_labels": labels,
         "chart_income": income_data,
         "chart_expense": expense_data,
-
         "cat_labels": cat_labels,
         "cat_values": cat_values,
-
         "insight_top_category_name": insight_top_category_name,
         "insight_top_category_amount": insight_top_category_amount,
         "insight_expense_vs_avg": insight_expense_vs_avg,
         "insight_expense_vs_avg_percent": insight_expense_vs_avg_percent,
         "insight_expense_higher": insight_expense_higher,
         "avg_exp_prev": avg_exp_prev,
-
         "budget_items_dashboard": budget_items_dashboard,
         "budget_total_count": budget_total_count,
         "budget_over_count": budget_over_count,
-
         "goals_preview": goals_preview,
         "upcoming_recurring": upcoming_recurring,
-
         "dash_pref": dash_pref,
         "debt_plan": debt_plan,
     }
     return render(request, "app_finance/dashboard.html", context)
-
 
 @login_required
 def dashboard_preferences(request):
@@ -629,6 +602,7 @@ def debts_overview(request):
     """
     today = timezone.now().date()
 
+    # ดึงเฉพาะบัญชีหนี้ของ user นี้
     base_qs = (
         Account.objects
         .filter(
@@ -645,7 +619,7 @@ def debts_overview(request):
     for acc in base_qs:
         bal = Decimal(acc.current_balance or Decimal("0"))
         if bal >= 0:
-            continue
+            continue  # ไม่ใช่หนี้ ข้าม
 
         debt_amount = abs(bal)
         total_debt += debt_amount
@@ -672,49 +646,74 @@ def debts_overview(request):
             "months_to_payoff": months_to_payoff,
         })
 
+    # แผน Snowball / Avalanche (แค่ลำดับ)
     snowball_plan = sorted(debts, key=lambda x: x["debt_amount"])
     avalanche_plan = sorted(debts, key=lambda x: x["interest_rate"], reverse=True)
 
-    monthly_budget_raw = (request.GET.get("monthly_budget") or "").replace(",", "").strip()
+    # 🎯 ตั้งค่าแผนต่อ user (OneToOne)
+    plan, _ = DebtPlanSetting.objects.get_or_create(user=request.user)
+
+    # ค่าไว้โชว์ใน input
+    monthly_budget_raw = ""
     monthly_budget = None
     sim_months = None
 
-    if monthly_budget_raw:
-        try:
-            monthly_budget = Decimal(monthly_budget_raw)
-            if monthly_budget > 0 and total_debt > 0:
-                sim_months = ceil(float(total_debt / monthly_budget))
-        except Exception:
-            monthly_budget = None
-            sim_months = None
+    # ถ้ามีงบในฐานข้อมูลแล้ว เอามาแสดงเป็น default
+    if plan.monthly_budget and plan.monthly_budget > 0:
+        monthly_budget = plan.monthly_budget
+        monthly_budget_raw = f"{plan.monthly_budget:.2f}"
 
-    plan, _ = DebtPlanSetting.objects.get_or_create(pk=1)
+        if total_debt > 0:
+            sim_months = ceil(float(total_debt / monthly_budget))
 
     if request.method == "POST":
+        # รับ strategy
         strategy = (request.POST.get("strategy") or "NONE").upper()
         allowed = dict(DebtPlanSetting.STRATEGY_CHOICES).keys()
         if strategy not in allowed:
             strategy = "NONE"
 
+        # รับงบจ่ายหนี้ต่อเดือน
+        raw = (request.POST.get("monthly_budget") or "").replace(",", "").strip()
+        if raw:
+            try:
+                mb = Decimal(raw)
+                if mb < 0:
+                    mb = Decimal("0")
+                plan.monthly_budget = mb
+            except Exception:
+                messages.error(request, "รูปแบบงบจ่ายหนี้ต่อเดือนไม่ถูกต้องคับ")
+
         plan.strategy = strategy
         plan.save()
+
         messages.success(request, "บันทึกแผนปลดหนี้ที่ใช้อยู่เรียบร้อยแล้วคับ")
         return redirect("app_finance:debts_overview")
+
+    # เลือกลำดับตามแผนที่ user เลือก
+    active_plan = None
+    if plan.strategy == "SNOWBALL":
+        active_plan = snowball_plan
+    elif plan.strategy == "AVALANCHE":
+        active_plan = avalanche_plan
 
     context = {
         "today": today,
         "debts": debts,
         "total_debt": total_debt,
         "debt_count": len(debts),
+
         "snowball_plan": snowball_plan,
         "avalanche_plan": avalanche_plan,
+
         "monthly_budget_raw": monthly_budget_raw,
         "monthly_budget": monthly_budget,
         "sim_months": sim_months,
+
         "plan": plan,
+        "active_plan": active_plan,
     }
     return render(request, "app_finance/debts_overview.html", context)
-
 
 # =========================
 #   TRANSACTION CRUD
@@ -892,11 +891,13 @@ def _last_day_of_month(year: int, month: int) -> int:
 
 @login_required
 def recurring_list(request):
-    """แสดง/เพิ่ม recurring ของ user"""
+    """หน้าแสดง/เพิ่มรายการประจำทุกเดือน (เฉพาะของ user นี้)"""
+    user = request.user
     today = timezone.now().date()
+
     recurrings = (
         RecurringTransaction.objects
-        .filter(owner=request.user, is_active=True)
+        .filter(owner=user, is_active=True)
         .select_related("account", "category")
         .order_by("day_of_month", "name")
     )
@@ -904,17 +905,17 @@ def recurring_list(request):
     if request.method == "POST":
         form = RecurringTransactionForm(request.POST)
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.owner = request.user
-            obj.save()
+            rt = form.save(commit=False)
+            rt.owner = user
+            rt.save()
             messages.success(request, "บันทึกรายการประจำเรียบร้อยแล้ว")
             return redirect("app_finance:recurring_list")
     else:
         form = RecurringTransactionForm()
 
     return render(request, "app_finance/recurring_list.html", {
-        "recurrings": recurrings,
         "today": today,
+        "recurrings": recurrings,
         "form": form,
     })
 
@@ -974,16 +975,22 @@ def recurring_apply_month(request):
 
 @login_required
 def recurring_generate_for_month(request):
-    """สร้าง Transaction จาก recurring สำหรับเดือนปัจจุบัน (ของ user)"""
+    """
+    สร้าง Transaction จริงจาก RecurringTransaction สำหรับเดือนปัจจุบัน
+    - สร้างเฉพาะ recurring ของ user นี้
+    - กันซ้ำ: ถ้ามีรายการเดิมที่สร้างแล้วในเดือนนั้น จะไม่สร้างซ้ำ
+    """
+    user = request.user
     today = timezone.now().date()
     year = today.year
     month = today.month
     last_day = _last_day_of_month(year, month)
 
-    recurrings = RecurringTransaction.objects.filter(owner=request.user, is_active=True)
+    recurrings = RecurringTransaction.objects.filter(owner=user, is_active=True)
     created = 0
 
     for r in recurrings:
+        # เคารพ start_date / end_date
         if r.start_date and r.start_date > today:
             continue
         if r.end_date and r.end_date < today:
@@ -993,7 +1000,7 @@ def recurring_generate_for_month(request):
         tx_date = date(year, month, d)
 
         exists = Transaction.objects.filter(
-            owner=request.user,
+            owner=user,
             source_recurring=r,
             date=tx_date,
             amount=r.amount,
@@ -1005,7 +1012,7 @@ def recurring_generate_for_month(request):
             continue
 
         Transaction.objects.create(
-            owner=request.user,
+            owner=user,
             account=r.account,
             category=r.category,
             date=tx_date,
@@ -1024,7 +1031,6 @@ def recurring_generate_for_month(request):
         messages.info(request, "ไม่มีรายการใหม่ที่ต้องสร้างสำหรับเดือนนี้")
 
     return redirect("app_finance:recurring_list")
-
 
 # =========================
 #   SUMMARY / REPORT

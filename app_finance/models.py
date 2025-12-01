@@ -409,7 +409,6 @@ class CategoryBudget(models.Model):
     def amount_display(self) -> Decimal:
         return self.amount or Decimal("0")
 
-
 class DebtPlanSetting(models.Model):
     STRATEGY_CHOICES = [
         ("NONE", "ยังไม่เลือกแผนเฉพาะ"),
@@ -417,11 +416,28 @@ class DebtPlanSetting(models.Model):
         ("AVALANCHE", "Avalanche – ดอกสูงก่อน"),
     ]
 
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="debt_plan_setting",
+        null=True,       # ตอนนี้ให้ null ได้ไปก่อน (กัน migration error)
+        blank=True,
+    )
+
+    # 👇 ฟิลด์ใหม่: งบจ่ายหนี้รวมต่อเดือน
+    monthly_budget = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="งบรวมสำหรับจ่ายหนี้ต่อเดือน",
+    )
+
     strategy = models.CharField(
         max_length=20,
         choices=STRATEGY_CHOICES,
         default="NONE",
     )
+
     note = models.CharField(
         max_length=255,
         blank=True,
@@ -431,8 +447,9 @@ class DebtPlanSetting(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Debt plan: {self.get_strategy_display()}"
-
+        if self.user:
+            return f"Debt plan for {self.user.username}: {self.get_strategy_display()}"
+        return f"Debt plan (no user): {self.get_strategy_display()}"
 
 class DashboardPreference(models.Model):
     """

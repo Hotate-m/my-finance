@@ -19,44 +19,57 @@
   <form method="post">
     {% csrf_token %}
 
+    <!-- ชื่อบัญชี -->
     <div class="mb-2">
       <label class="form-label">ชื่อบัญชี / กระเป๋า</label>
       {{ form.name }}
     </div>
 
-    <div class="mb-2">
+    <!-- ประเภท -->
+    <div class="mb-3">
       <label class="form-label">ประเภท</label>
       {{ form.account_type }}
-    </div>
-
-    <div class="mb-2">
-      <label class="form-label">ยอดตั้งต้น (Opening balance)</label>
-      {{ form.opening_balance }}
-      <div class="form-text text-secondary" style="font-size:11px;">
-        ถ้าเป็นหนี้ เช่น เงินกู้เริ่มต้น 300,000 ให้ใส่ -300000
+      <div class="form-text" style="font-size:11px;">
+        ถ้าเป็นบัตรเครดิตหรือเงินกู้ ระบบจะให้กรอกดอกเบี้ยและเปอร์เซ็นต์ขั้นต่ำเพิ่ม
       </div>
     </div>
 
+    <!-- ฟิลด์เฉพาะตอนเป็น CREDIT / LOAN -->
+    <div id="debt-extra-fields" class="mb-3" style="display:none;">
+      <div class="row g-2">
+        <!-- ดอกเบี้ยต่อปี -->
+        <div class="col-12 col-md-6">
+          <label class="form-label">
+            ดอกเบี้ยต่อปี (Interest rate %)
+          </label>
+          {{ form.interest_rate }}
+          <div class="form-text" style="font-size:11px;">
+            ใส่เป็นเปอร์เซ็นต์ต่อปี เช่น 16, 18<br>
+            ถ้าไม่ทราบสามารถเว้นว่างไว้ได้
+          </div>
+        </div>
+
+        <!-- เปอร์เซ็นต์ขั้นต่ำ -->
+        <div class="col-12 col-md-6">
+          <label class="form-label">
+            เปอร์เซ็นต์ยอดชำระขั้นต่ำต่อรอบบิล (Min payment %)
+          </label>
+          {{ form.min_payment_percent }}
+          <div class="form-text" style="font-size:11px;">
+            เช่น ขั้นต่ำ 10% ของยอดหนี้ ให้ใส่ 10<br>
+            ใช้สำหรับคำนวณ “เดือนโดยประมาณ” ในหน้าแผนปลดหนี้
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- วงเงิน -->
     <div class="mb-2">
       <label class="form-label">วงเงิน (Credit limit)</label>
       {{ form.credit_limit }}
     </div>
 
-    {# ถ้า AccountForm มีฟิลด์ดอกเบี้ย/ขั้นต่ำอยู่แล้ว จะโชว์ด้วยเลย #}
-    {% if form.interest_rate %}
-      <div class="mb-2">
-        <label class="form-label">ดอกเบี้ยต่อปี (%)</label>
-        {{ form.interest_rate }}
-      </div>
-    {% endif %}
-
-    {% if form.min_payment_percent %}
-      <div class="mb-3">
-        <label class="form-label">ขั้นต่ำที่ต้องจ่ายต่อเดือน (%)</label>
-        {{ form.min_payment_percent }}
-      </div>
-    {% endif %}
-
+    <!-- ใช้งานอยู่ -->
     <div class="form-check mb-3">
       {{ form.is_active }}
       <label class="form-check-label">ใช้งานอยู่</label>
@@ -72,4 +85,33 @@
     </div>
   </form>
 </div>
+
+<!-- JS: แสดงฟิลด์ดอกเบี้ย/ขั้นต่ำเฉพาะตอนเลือก CREDIT หรือ LOAN -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    function toggleDebtFields() {
+      const select = document.getElementById('id_account_type');
+      const extra = document.getElementById('debt-extra-fields');
+      if (!select || !extra) return;
+
+      const v = select.value;
+      if (v === 'CREDIT' || v === 'LOAN') {
+        extra.style.display = 'block';
+      } else {
+        extra.style.display = 'none';
+        // ถ้าเปลี่ยนประเภทเป็นอย่างอื่น เคลียร์ค่าดอกเบี้ย/ขั้นต่ำออกไปด้วย
+        const ir = document.getElementById('id_interest_rate');
+        const mp = document.getElementById('id_min_payment_percent');
+        if (ir) ir.value = '';
+        if (mp) mp.value = '';
+      }
+    }
+
+    toggleDebtFields();  // เรียกครั้งแรกตอนโหลดหน้า
+    const select = document.getElementById('id_account_type');
+    if (select) {
+      select.addEventListener('change', toggleDebtFields);
+    }
+  });
+</script>
 {% endblock %}

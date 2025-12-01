@@ -1,5 +1,5 @@
 from django import forms
-from .models import Transaction, Account, Category, RecurringTransaction, Goal
+from .models import Transaction, Account, Category, RecurringTransaction, Goal, DebtPlanSetting
 
 
 class TransactionForm(forms.ModelForm):
@@ -34,7 +34,14 @@ class TransactionForm(forms.ModelForm):
 class AccountForm(forms.ModelForm):
     class Meta:
         model = Account
-        fields = ["name", "account_type", "opening_balance", "credit_limit", "is_active"]
+        fields = ["name", 
+                  "account_type", 
+                  "opening_balance", 
+                  "credit_limit", 
+                  "is_active",
+                  "interest_rate",
+                  "min_payment_percent",
+                  ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "account_type": forms.Select(attrs={"class": "form-select"}),
@@ -109,4 +116,16 @@ class GoalForm(forms.ModelForm):
             "direction": forms.Select(attrs={"class": "form-select"}),
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
             "note": forms.Textarea(attrs={"class": "form-control", "rows": 2}),
+        }
+class DebtPlanSettingForm(forms.ModelForm):
+    class Meta:
+        model = DebtPlanSetting
+        fields = ["monthly_budget", "strategy"]
+        widgets = {
+            "monthly_budget": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0",
+            }),
+            "strategy": forms.Select(attrs={"class": "form-select"}),
         }
